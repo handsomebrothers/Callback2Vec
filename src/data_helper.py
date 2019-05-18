@@ -3,7 +3,7 @@ import csv
 import matplotlib.pyplot as plt
 import re
 '''
-数据的参数说明：
+
 dx_var:shape=(batch_size, max_visit_per_person, max_dx_per_visit), name='dx_var')
 rx_var:shape=(batch_size, max_visit_per_person, max_dx_per_visit, max_rx_per_dx,name='rx_var)
 '''
@@ -16,7 +16,7 @@ def load_data(path,path1):
     all_dx_data=[]#
     all_rx_data=[]
     i=0
-    for line in csv_file:#一行代表的是一个person
+    for line in csv_file:
         if i>800:break
         if len(line)==1:
             if line[0].find('apk'):
@@ -25,7 +25,7 @@ def load_data(path,path1):
         if len(line)>1:
             if line[0]=='code_seq':
                 call=[]
-                for key in line[1:]:#代表的是一个callback sequence
+                for key in line[1:]:
                     if key=='\\':
                         dx_data.append(call)
                         call=[]
@@ -49,11 +49,11 @@ def load_data(path,path1):
     dx_data1 = []
     all_dx_data1 = []  #
     all_rx_data1 = []
-    for line in csv_file1:  # 一行代表的是一个person
+    for line in csv_file1:  
         if len(line) > 1:
             if line[0] == 'code_seq':
                 call = []
-                for key in line[1:]:  # 代表的是一个callback sequence
+                for key in line[1:]: 
                     if key == '\\':
                         dx_data1.append(call)
                         call = []
@@ -97,12 +97,11 @@ def generate_train_dataset(path,path1):
     all_dx_data,all_rx_data=load_data(path,path1)
     all_rx_data_new=[]
     all_size=[]
-    #对于代码的最大长度是400
-    #回调函数序列长度35
+    
     for all_callback_seq in all_rx_data:
         all=[]
         for i,key in enumerate(all_callback_seq):
-            new_code=[k for k in key if k!='Lbracket' and k!='Rbracket']#将所有的左右括号去掉，即进行去噪
+            new_code=[k for k in key if k!='Lbracket' and k!='Rbracket']
             all_size.append(len(new_code))
             all.append(new_code)
         all_rx_data_new.append(all)
@@ -128,7 +127,7 @@ def generate_train_dataset(path,path1):
             all_dataset.append(data[len(data)//2:])
         else:
             all_dataset.append(data)
-    #得到回调函数和回调函数内部代码
+  
     return all_dataset
 def generate_train_data_new(path,path1):
     data=generate_train_dataset(path,path1)
@@ -179,7 +178,7 @@ def generate_train_data_new(path,path1):
         all_dx_data_new.append(dx_data)
         all_dx_mask.append(dx_mask)
         all_rx_mask.append(rx_mask)
-    #加载dx的标签
+   
     all_dx_label=[]
     for key in all_dx_data_new:
         all_dx_label.append([key[-1]]+key[:-1])

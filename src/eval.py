@@ -9,7 +9,7 @@ import data_helper
 # ==================================================
 
 # Data Parameters
-#./是当前目录  ../是父级目录  /是根目录
+
 tf.flags.DEFINE_string("input_text_file", "G:/data_test.csv", "Label file for test text data source.")
 # tf.flags.DEFINE_string("input_text_file", "../data/data2.csv", "Test text data source to evaluate.")
 tf.flags.DEFINE_string("single_url",None,"single url to evaluate")
@@ -34,7 +34,7 @@ def test(checkpoint_path):
 
     # validate checkout point file
     checkpoint_file = tf.train.latest_checkpoint(
-        checkpoint_path)  # 我们可以使用tf.train.latest_checkpoint（）来自动获取最后一次保存的模型。
+        checkpoint_path) 
     if checkpoint_file is None:
         print("Cannot find a valid checkpoint file!")
         exit(0)
@@ -60,5 +60,5 @@ def test(checkpoint_path):
             visit_emb = graph.get_operation_by_name("outputs/output").outputs[0]
 
 if __name__ == '__main__':
-    checkpoint_path = "F:/2018年暑假科研/CNN/CNN相关文件/DetectMaliciousURL-master/model/runs/1539574739/checkpoints"
+    checkpoint_path = "F:/DetectMaliciousURL-master/model/runs/1539574739/checkpoints"
     test(checkpoint_path)

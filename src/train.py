@@ -10,7 +10,7 @@ from new_model import CB_VEC
 # from data_helper import *
 from data_helper import *
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"#指定在第0块GPU上跑
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 print('over')
 #------------------------- define parameter -----------------------------
 tf.flags.DEFINE_integer("batch_size",300, "batch size of each batch")
@@ -50,13 +50,13 @@ FLAGS.flag_values_dict()
 # import os
 # os.environ["CUDA_VISIBLE_DEVICES"] = ""
 timestamp = str(int(time.time()))
-out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))#用于创建参数保存的文件夹
+out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
 print("Writing to {}\n".format(out_dir))
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
 checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
-checkpoint_prefix = os.path.join(checkpoint_dir, "model")#创建checkpoints的保存模型的地址
+checkpoint_prefix = os.path.join(checkpoint_dir, "model")
 if not os.path.exists(checkpoint_dir):
     os.makedirs(checkpoint_dir)
 path='/home/hdr/my_apk_project/callback_method_not_amd.csv'

@@ -23,7 +23,7 @@ public class Method_AST_Nodes {
 	public static void main(String[] args) throws IOException {
 		// TODO Auto-generated method stub
 
-		String method_path="F:\\2018年第一学年科研\\APK科研\\笔记本资料\\AST_抽象语法树\\103.java";
+		String method_path="F:\\103.java";
 		ASTParserTool parserTool1 = new ASTParserTool();
 		MethodList methodVectorList1 = new MethodList();
 		System.out.println(method_path);

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         id="application"
+         point="org.eclipse.core.runtime.applications">
+      <application>
+         <run
+               class="myrcpview.Application">
+         </run>
+      </application>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectives">
+      <perspective
+            name="RCP Perspective"
+            class="myrcpview.Perspective"
+            id="MyRcpView.perspective">
+      </perspective>
+   </extension>
+   <extension
+         point="org.eclipse.ui.actionSets">
+      <actionSet
+            id="MyRcpView.actionSet1"
+            label="我的Action"
+            visible="true">
+         <menu
+               id="MyRcpView.menu1"
+               label="评论推荐"
+               path="window/additions">
+            <separator
+                  name="separator1">
+            </separator>
+         </menu>
+         <action
+               class="myrcpview.actions.MyMenu"
+               id="MyRcpView.action1"
+               label="Output Review"
+               menubarPath="window/MyRcpView.menu1/separator1"
+               toolbarPath="additions">
+         </action>
+         <action
+               class="myrcpview.actions.MyEditor"
+               id="MyRcpView.action1"
+               label="Input Code"
+               menubarPath="window/MyRcpView.menu1/separator1"
+               style="push"
+               toolbarPath="additions">
+         </action>
+      </actionSet>
+   </extension>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            class="myrcpview.views.MyRcpView"
+            id="MyRcpView.view2"
+            name="我的视图"
+            restorable="true">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            class="myrcpview.editor.MyMulEditor"
+            default="false"
+            id="MyRcpView.editor1"
+            name="我的编辑器">
+      </editor>
+   </extension>
+
+</plugin>

@@ -1,6 +1,8 @@
 # Callback2Vec
 A callback based hierarchical embedding approach for Android app.
 # Basic Usage
+For Callback2Vec its usage is as follows:
+First 
 # Requirements
 Install requirements.txt file to make sure correct versions of libaraies are being used
 - Python 3.5.x

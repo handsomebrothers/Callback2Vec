@@ -9,5 +9,5 @@ Install requirements.txt file to make sure correct versions of libaraies are bei
 - gensim==3.6.0
 - tensorflow>=1.12.1
 - matplotlib==3.0.0
-- Eclipse RCP Oxygen.3a Release (4.7.3a)
 - androguard==3.2.1
+- Eclipse RCP Oxygen.3a Release (4.7.3a)

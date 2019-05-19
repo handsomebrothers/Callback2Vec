@@ -4,7 +4,8 @@ A callback based hierarchical embedding approach for Android app.
 - For Callback2Vec its usage is as follows:
 - First you need to run Callback2Vec/src/Callback2Vec/Get_APK_Source.py to get the source code for all apks，
 - Run Callback2Vec/src/MyRcpView/src/APK_AST/Method_AST_Nodes.java to convert all APK sources to AST nodes，
-  Example:
+  # Example:
+  
   for code snippets:
   
   > public static void main(String[] args) {

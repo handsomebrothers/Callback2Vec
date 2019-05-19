@@ -7,8 +7,8 @@ A callback based hierarchical embedding approach for Android app.
   Example:
   for code snippets:
   >public static void main(String[] args) {
-  >for (int i = 0; i < args.length; i++) {
-  >try {
+  >    for (int i = 0; i < args.length; i++) {
+  >      try {
                 >String doc = URLGrabber.getDocumentAsString(args[i]);
                 >System.out.println(doc);
             >} catch (MalformedURLException e) {

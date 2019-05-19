@@ -28,6 +28,25 @@ A callback based hierarchical embedding approach for Android app.
   电脑  | $1600
   手机  | $12
   导管  | $1
+  ReservedWord  | for
+  ReservedWord  | try
+  ReservedWord  | catch
+  PrimitiveTypeToken  | int
+  QualifiedName  | args.length
+  SimpleTypeToken  | String
+  FunctionName  | getDocumentAsString
+  Variable  | URLGrabber
+  FunctionName  | println
+  QualifiedName  | System.out
+  SimpleTypeToken  | MalformedURLException
+  FunctionName  | println
+  QualifiedName  | System.err
+  StringLiteral  | " cannot be interpreted as a URL."
+  SimpleTypeToken  | IOException
+  FunctionName  | println
+  QualifiedName  | System.err
+  StringLiteral  | "Unexpected IOException: "
+  FunctionName  | getMessage
 - you need to import the jar package under the Lib folder and install Eclipse RCP IDE to run Method_AST_Nodes.java
   file.
 - Run Callback2Vec/src/Callback2Vec//Build_Callback_Graph.py in the normal way of running.Py files to get callback 

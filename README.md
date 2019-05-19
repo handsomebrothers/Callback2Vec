@@ -9,7 +9,6 @@ A callback based hierarchical embedding approach for Android app.
   
   > public static void main(String[] args) {
   >    for (int i = 0; i < args.length; i++) {
-  
   >      try {
   >              String doc = URLGrabber.getDocumentAsString(args[i]);
   >              System.out.println(doc);

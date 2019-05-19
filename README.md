@@ -23,11 +23,8 @@ A callback based hierarchical embedding approach for Android app.
   > }
   Through the transformation of AST grammar tree, the AST nodes are obtained as follows.
   
-  项目     | Value
+  Type     | Value
   -------- | -----
-  电脑  | $1600
-  手机  | $12
-  导管  | $1
   ReservedWord  | for
   ReservedWord  | try
   ReservedWord  | catch

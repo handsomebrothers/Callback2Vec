@@ -4,6 +4,20 @@ A callback based hierarchical embedding approach for Android app.
 - For Callback2Vec its usage is as follows:
 - First you need to run Callback2Vec/src/Callback2Vec/Get_APK_Source.py to get the source code for all apks，
 - Run Callback2Vec/src/MyRcpView/src/APK_AST/Method_AST_Nodes.java to convert all APK sources to AST nodes，
+  Example:
+  for code snippets:
+  >public static void main(String[] args) {
+        >for (int i = 0; i < args.length; i++) {
+            >try {
+                >String doc = URLGrabber.getDocumentAsString(args[i]);
+                >System.out.println(doc);
+            >} catch (MalformedURLException e) {
+                >System.err.println(args[i] + " cannot be interpreted as a URL.");
+            >} catch (IOException e) {
+                >System.err.println("Unexpected IOException: " + e.getMessage());
+            >}
+        >}
+    >}
 - you need to import the jar package under the Lib folder and install Eclipse RCP IDE to run Method_AST_Nodes.java
   file.
 - Run Callback2Vec/src/Callback2Vec//Build_Callback_Graph.py in the normal way of running.Py files to get callback 

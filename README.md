@@ -21,6 +21,7 @@ A callback based hierarchical embedding approach for Android app.
   >          }
   >       }
   > }
+  
   Through the transformation of AST grammar tree, the AST nodes are obtained as follows.
   
   Type     | Value
